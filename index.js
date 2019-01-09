@@ -1,11 +1,13 @@
 // TODO: Move config to actual configuration, convict?
 
-const irc = require('irc')
-const log = require('pino')({
-  level: 'debug',
-})
+const Irc = require('irc')
+const Pino = require('pino')
 
-const config = {
+const pinoConfig = {
+  level: 'debug',
+}
+
+const ircConfig = {
   channels: ['#skwid'],
   username: 'Metasepia',
   realName: 'Metasepia Pfefferi',
@@ -14,7 +16,8 @@ const config = {
   autoConnect: false,
 }
 
-const client = new irc.Client('irc.quakenet.org', 'metasepia', config)
+const client = new Irc.Client('irc.quakenet.org', 'metasepia', ircConfig)
+const log = Pino(pinoConfig)
 
 const parseTopic = (channel, topic, nick, message) => {
   // Short circuit if we get a topic message from a source OTHER than a user
