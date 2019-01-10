@@ -14,9 +14,8 @@ A chatbot for the DopefishLives online streaming community.
 
 ## Design Considerations
 
-Data format:
-
 Sessions:
+
 streamer(s)|activity_type|activity|start_timestamp|end_timestamp
 ---|---|---|---|---
 Skwid|Game|Dark Souls|1547077201130|1547077210710
