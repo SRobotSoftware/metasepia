@@ -17,9 +17,9 @@ A chatbot for the DopefishLives online streaming community.
 Data format:
 
 Sessions:
-|streamer(s)|activity_type|activity|start_timestamp|end_timestamp|
-|-|-|-|-|-|
-|Skwid|Game|Dark Souls|1547077201130|1547077210710
+streamer(s)|activity_type|activity|start_timestamp|end_timestamp
+---|---|---|---|---
+Skwid|Game|Dark Souls|1547077201130|1547077210710
 |Dopefish, Fgw_wolf, GUTSMANSASS|Movie|Breakin' 2: Electric Boogaloo|1547077201130|1547077210710
 
 Commands:
