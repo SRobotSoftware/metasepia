@@ -31,8 +31,10 @@ Options:
 * (streamer): specific streamer
 
 Examples:
+```
 <Skwid> !played g: Dark Souls
-<Metasepia> Skwid,
+<Metasepia> Skwid, 1d 4h 23m 14s (0y 1d) ago, Skwid played Dark Souls for 2 seconds
+```
 
 ---
 
