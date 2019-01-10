@@ -25,10 +25,11 @@ Commands:
 * !(played|lastplayed) - Last known session of a game/streamer
 * !firstplayed - First known session of a game/streamer
 * !totalplayed - Total playtime across all sessions of a game/streamer + first session + last session + average session length
+* !currentlyplaying - Current session information
 
 Options:
 * (game|g): specific game
-* (streamer): specific streamer
+* (streamer|s): specific streamer
 
 Examples:
 ```
