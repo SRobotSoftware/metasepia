@@ -29,7 +29,6 @@ const ircConfig = {
 
 const client = new Irc.Client('irc.quakenet.org', 'metasepia', ircConfig)
 const log = Pino(pinoConfig)
-const parseLog = log.child('Parsed')
 
 let currentSessionId = 0
 const sessions = []
@@ -41,16 +40,16 @@ const sessions = []
 const parseTopic = (channel, topic, nick, message) => {
   // Short circuit if we get a topic message from a source OTHER than a user
   if (message.command !== 'TOPIC') return null
-  parseLog.debug('Topic Change Detected:', topic)
+  log.debug('Topic Change Detected:', topic)
 
   // Begin actual parsing
   // These regexes are going to need a lot of work...
   const streamer = getStreamers(topic)
   const game = getActivity('game', topic)
-  parseLog.debug({ streamer, game })
+  log.debug({ streamer, game })
 
   endSession(currentSessionId)
-  currentSessionId = startSession(streamer, game, Date.now())
+  currentSessionId = startSession(streamer, 'game', game, Date.now())
 }
 
 const startSession = (streamers, activityType, activity, startTime) => {
@@ -64,7 +63,7 @@ const startSession = (streamers, activityType, activity, startTime) => {
     startTime,
     endTime: null,
   }
-  parseLog.debug(session, 'Starting session:')
+  log.debug(session, 'Starting session:')
   sessions.push(session)
   return id
 }
@@ -77,9 +76,9 @@ const endSession = id => {
 }
 
 const getStreamers = str => {
-  parseLog.debug('Getting Streamers...')
+  log.debug('Getting Streamers...')
   const streamer = /Streamer:(.*?)\|/.exec(str)
-  parseLog.debug('Found:', streamer)
+  log.debug('Found:', streamer)
   return streamer[1]
 }
 
@@ -88,21 +87,27 @@ const getActivityType = str => {
 }
 
 const getActivity = (type, str) => {
-  parseLog.debug('Getting Activity...')
+  log.debug('Getting Activity...')
   const activity = /Game:(.*?)(\||$)/.exec(str)
-  parseLog.debug('Found:', activity)
+  log.debug('Found:', activity)
   return activity[1]
 }
 
 const parseMessage = (from, to, message) => {
-  parseLog.debug(from, to, message)
+  log.debug(from, to, message)
   // eslint-disable-next-line prefer-destructuring
   const parsedCommand = /!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
   if (to[0] === '#') {
     if (command === 'played' || command === 'p') {
       client.say(to, command)
-      parseLog.debug({ sessions }, 'Sessions dump:')
+      log.debug({ sessions }, 'Sessions dump:')
+    } else if (command === 'l') {
+      const filteredSessions = sessions.filter(x => x.endTime)
+      const session = filteredSessions[filteredSessions.length - 1]
+      const duration = session.endTime - session.startTime
+      const output = `${to}, ${session.streamer} played ${session.activity} for ${Math.floor(duration / 1000)} seconds`
+      client.say(to, output)
     }
   }
 }
