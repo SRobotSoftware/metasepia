@@ -77,7 +77,7 @@ const endSession = id => {
 
 const getStreamers = str => {
   log.debug('Getting Streamers...')
-  const streamer = /Streamer:(.*?)\|/.exec(str)
+  const streamer = /Streamers?:\s?(.*?)\s?\|/.exec(str)
   log.debug('Found:', streamer)
   return streamer[1]
 }
@@ -88,7 +88,7 @@ const getActivityType = str => {
 
 const getActivity = (type, str) => {
   log.debug('Getting Activity...')
-  const activity = /Game:(.*?)(\||$)/.exec(str)
+  const activity = /Game:\s?(.*?)\s?(\||$)/.exec(str)
   log.debug('Found:', activity)
   return activity[1]
 }
@@ -98,24 +98,45 @@ const parseMessage = (from, to, message) => {
   // eslint-disable-next-line prefer-destructuring
   const parsedCommand = /!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
-  if (to[0] === '#') {
-    if (command === 'played' || command === 'p') {
-      client.say(to, command)
-      log.debug({ sessions }, 'Sessions dump:')
-    } else if (command === 'l') {
-      const filteredSessions = sessions.filter(x => x.endTime)
-      const session = filteredSessions[filteredSessions.length - 1]
-      const duration = session.endTime - session.startTime
-      const output = `${to}, ${session.streamer} played ${session.activity} for ${Math.floor(duration / 1000)} seconds`
-      client.say(to, output)
-    }
+  if (to[0] === '#' && command) {
+    if (commands.hasOwnProperty(command))
+      commands[command](from, to, message)
+    else
+      client.say(to, 'I\'m sorry but I do not recognize that command.')
   }
+}
+
+const linkDiscord = (from, to, message) => {
+  client.say(to, 'https://discord.gg/meu4Jx')
+}
+
+const lastPlayed = (from, to, message) => {
+  if (sessions.length < 2) return null
+  const filteredSessions = sessions.filter(x => x.endTime)
+  const session = filteredSessions[filteredSessions.length - 1]
+  const duration = session.endTime - session.startTime
+  const output = (!session.streamer)
+    ? `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
+    : `${to}, ${session.streamer} played ${session.activity} for ${Math.floor(duration / 1000)} seconds`
+  client.say(to, output)
+}
+
+const list = (from, to, message) => {
+  log.debug({ sessions }, 'Sessions dump:')
 }
 
 const shutdown = (code = 0, reason = '') => {
   log.debug('Shutting Down', reason)
   const message = (code === 0) ? 'Shutting Down' : 'Error'
   client.disconnect(message, () => process.exit(code))
+}
+
+// Command mapping
+const commands = {
+  'p': lastPlayed,
+  'played': lastPlayed,
+  'l': list,
+  'discord': linkDiscord,
 }
 
 /*
