@@ -19,6 +19,9 @@
     "database": "secret"
   },
   "meta": {
+    "topicTrackingChannels": [
+      "#skwid"
+    ],
     "urlWords": [
       "http: //www.hitbox.tv/",
       "http: //www.hitbox.tv/embed/",

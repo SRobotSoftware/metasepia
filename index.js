@@ -16,6 +16,7 @@ const ircConfig = config.get('ircConfig')
 const dbConfig = config.get('dbConfig')
 const urlWords = config.get('meta.urlWords')
 const streamerAliases = config.get('meta.streamerAliases')
+const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 
 /*
 **  Initialization
@@ -51,6 +52,8 @@ let forceKill = false
 */
 
 const parseTopic = (channel, topic, nick, message) => {
+  // Short circuit if we get a topic message from a channel we don't care about
+  if (!topicTrackingChannels.some(x => x === channel)) return null
   // Short circuit if we get a topic message from a source OTHER than a user
   if (message.command !== 'TOPIC') return null
   log.debug('Topic Change Detected:', topic)
