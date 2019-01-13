@@ -5,6 +5,7 @@ sessions.streamer,
 sessions.activity,
 sessions.start_timestamp,
 sessions.end_timestamp,
+(UNIX_TIMESTAMP(sessions.end_timestamp) - UNIX_TIMESTAMP(sessions.start_timestamp)) AS `duration_in_seconds`,
 activity_types.activity_type
 from
 sessions

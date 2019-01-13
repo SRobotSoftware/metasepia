@@ -99,8 +99,10 @@ const sessions = []
 ** FirstPlayed: select * from sessions_view order by session_id asc limit 1
 ** TotalPlayed:
 **
+** Unmapped Activities Count: select COUNT(activity_raw) as `Unmapped Activities Count` from activities_mapping where ISNULL(fk_activity_types)
+**
 ** Start session: call newSession(streamer, activity, raw_topic, activity_type)
-** Start session returns session_id
+** Start session returns session_id and will call endSession() before starting a new one
 ** End session: call endSession()
 */
 
