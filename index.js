@@ -12,7 +12,7 @@ const mysql = require('mysql')
 */
 
 const pinoConfig = config.get('pinoConfig')
-const ircConfig = config.get('ircConfig')
+const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
 // const urlWords = config.get('meta.urlWords')
 // const streamerAliases = config.get('meta.streamerAliases')
@@ -23,11 +23,9 @@ const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 */
 
 const db = mysql.createConnection(dbConfig)
-const client = new Irc.Client('irc.quakenet.org', 'metasepia', ircConfig)
+const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
 const log = Pino(pinoConfig)
-
-const sessions = []
-
+// Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
 
 /*
@@ -144,10 +142,6 @@ const linkDiscord = (from, to, message) => {
 }
 
 const lastPlayed = (from, to, message) => {
-  if (sessions.length < 2) return null
-  const filteredSessions = sessions.filter(x => x.endTime)
-  const session = filteredSessions[filteredSessions.length - 1]
-  const duration = session.endTime - session.startTime
   const output = (!session.streamer)
     ? `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
     : `${to}, ${session.streamer} played ${session.activity} for ${Math.floor(duration / 1000)} seconds`

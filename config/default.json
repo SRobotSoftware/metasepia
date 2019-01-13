@@ -2,15 +2,19 @@
   "pinoConfig": {
     "level": "trace"
   },
-  "ircConfig": {
-    "channels": [
-      "#skwid"
-    ],
-    "username": "Metasepia",
-    "realName": "Metasepia Pfefferi",
-    "autoRejoin": true,
-    "floodProtection": true,
-    "autoConnect": false
+  "irc": {
+    "server": "irc.quakenet.org",
+    "name": "metasepia",
+    "config": {
+      "channels": [
+        "#skwid"
+      ],
+      "username": "Metasepia",
+      "realName": "Metasepia Pfefferi",
+      "autoRejoin": true,
+      "floodProtection": true,
+      "autoConnect": false
+    }
   },
   "dbConfig": {
     "host": "secret",
