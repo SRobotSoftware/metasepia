@@ -16,10 +16,10 @@ A chatbot for the DopefishLives online streaming community.
 
 Sessions:
 
-streamer(s)|activity_type|activity|start_timestamp|end_timestamp
----|---|---|---|---
-Skwid|Game|Dark Souls|1547077201130|1547077210710
-|Dopefish, Fgw_wolf, GUTSMANSASS|Movie|Breakin' 2: Electric Boogaloo|1547077201130|1547077210710
+session_id|streamer|activity_type|activity|start_timestamp|end_timestamp|raw_topic_string
+---|---|---|---|---|---|---
+0|Skwid|Game|Dark Souls|1547077201130|1547077210710| 'Streamer: Skwid | Game: Dark Souls | #dopefish_gdq'
+1|Dopefish, Fgw_wolf, GUTSMANSASS|Movie|Breakin' 2: Electric Boogaloo|1547077201130|1547077210710| ''
 
 Commands:
 * !(played|lastplayed) - Last known session of a game/streamer
