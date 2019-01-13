@@ -39,3 +39,37 @@ BEGIN
   SELECT LAST_INSERT_ID() AS `session_id`;
 
 END //
+
+DELIMITER //
+CREATE PROCEDURE `totalSession`(
+  IN activity_in VARCHAR(255),
+  IN streamer_in VARCHAR(255)
+)
+BEGIN
+
+  declare end_t TIMESTAMP;
+  declare start_t TIMESTAMP;
+  declare duration INT;
+
+  select end_timestamp into end_t from sessions_view
+  where
+  activity like activity_in
+  and streamer like streamer_in
+  and not ISNULL(end_timestamp)
+  limit 1;
+
+  select start_timestamp into start_t from sessions_view
+  where
+  activity like activity_in
+  and streamer like streamer_in
+  order by session_id asc
+  limit 1;
+
+  select SUM(duration_in_seconds) into duration from sessions_view
+  where
+  activity like activity_in
+  and streamer like streamer_in;
+
+  select start_t, end_t, duration;
+
+END //
