@@ -139,7 +139,7 @@ const parseMessage = (from, to, message) => {
 }
 
 const linkDiscord = (from, to, message) => {
-  client.say(to, 'https://discord.gg/meu4Jx')
+  client.say(to, `${from}, our discord server is available here: https://discord.gg/meu4Jx`)
 }
 
 const lastPlayed = (from, to, message) => {
