@@ -93,6 +93,17 @@ const sessions = []
 **  Functions
 */
 
+/*
+** SQL COMMANDS
+** LastPlayed: select * from sessions_view limit 1
+** FirstPlayed: select * from sessions_view order by session_id asc limit 1
+** TotalPlayed:
+**
+** Start session: call newSession(streamer, activity, raw_topic, activity_type)
+** Start session returns session_id
+** End session: call endSession()
+*/
+
 const parseTopic = (channel, topic, nick, message) => {
   // Short circuit if we get a topic message from a source OTHER than a user
   if (message.command !== 'TOPIC') return null
@@ -178,6 +189,18 @@ const lastPlayed = (from, to, message) => {
   client.say(to, output)
 }
 
+const firstPlayed = (from, to, message) => {
+  return null
+}
+
+const totalPlayed = (from, to, message) => {
+  return null
+}
+
+const currentlyPlaying = (from, to, message) => {
+  return null
+}
+
 const list = (from, to, message) => {
   log.debug({ sessions }, 'Sessions dump:')
 }
@@ -192,6 +215,10 @@ const shutdown = (code = 0, reason = '') => {
 const commands = {
   'p': lastPlayed,
   'played': lastPlayed,
+  'lastplayed': lastPlayed,
+  'firstplayed': firstPlayed,
+  'totalplayed': totalPlayed,
+  'currentlyplaying': currentlyPlaying,
   'l': list,
   'discord': linkDiscord,
 }
