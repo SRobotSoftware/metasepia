@@ -15,13 +15,69 @@ const pinoConfig = {
 }
 
 const ircConfig = {
-  channels: ['#skwid'],
+  channels: [
+    '#skwid',
+    /* Copied over from GoaLitium's snippets */
+    // '#dopefish_lives',
+    // '#freamonsmind',
+    // '#weeklyweebshit',
+    // '#dopelives.fi',
+    // '#dopefish_agdq',
+    // '#dopefish_sgdq',
+    // '#dopefish_gdq',
+  ],
   username: 'Metasepia',
   realName: 'Metasepia Pfefferi',
   autoRejoin: true,
   floodProtection: true,
   autoConnect: false,
 }
+
+const urlWords = [
+  'http://www.hitbox.tv/',
+  'http://www.hitbox.tv/embed/',
+  'www.hitbox.tv/',
+  'www.hitbox.tv/embed/',
+  'http://hitbox.tv/',
+  'http://hitbox.tv/embed/',
+  'http://www.twitch.tv/',
+  'www.twitch.tv/',
+  'http://www.livestream.com/',
+  'www.livestream.com/',
+  'http://www.ustream.com/channel/',
+  'www.ustream.com/channel/',
+]
+
+const streamerAliases = [
+  ['dopefish', 'dopefish_lives', 'dope', 'laddergoat'],
+  ['arch', 'a', 'a-', 'a_'],
+  ['boomer', 'booom3', 'booom', 'iron_boomer'],
+  ['soulSilver', 'soul'],
+  ['sir_Andersen', 'sirandersen', 'andersen', 'sir andersen'],
+  ['qipz', 'chips'],
+  ['flippinKamikaze', 'flippin', 'kamikaze', 'flip'],
+  ['ramstrong', 'ram'],
+  ['po_', 'po',],
+  ['lexi', 'lexitheswift'],
+  ['lewishM', 'lewish', 'animeWeedLord'],
+  ['fateweaver', 'splitweaver',],
+  ['fgw_wolf', 'fgwwolf', 'wolf'],
+  ['derpfoot', 'foot'],
+  ['i-h', 'ih', 'ironheart', 'I-HBot'],
+  ['ratix', 'www', 'warau'],
+  ['suitepee', 'suite', 'pee'],
+  ['ska', 'butts', 'sittits'],
+  ['q', '???', 'cue', 'mystery'],
+  ['jimmy', 'did nothing wrong'],
+  ['hitman_spike', 'hitman', 'spike'],
+  ['darkZoma', 'zoma'],
+  ['greenMiscreant', 'greene', 'tutturuu'],
+  ['skwid', 'mcskwid'],
+  ['qeird', 'meryl', 'futa', 'futanari'],
+  ['rumia', 'rumiapilkington', 'circle nine', 'circle9'],
+  ['danofthetubes', 'dan'],
+  ['gutsmansass', 'guts', 'gutsman', 'gutsmang'],
+]
 
 /*
 **  Initialization
@@ -49,10 +105,10 @@ const parseTopic = (channel, topic, nick, message) => {
   log.debug({ streamer, game })
 
   endSession(currentSessionId)
-  currentSessionId = startSession(streamer, 'game', game, Date.now())
+  currentSessionId = startSession(streamer, 'game', game, Date.now(), topic)
 }
 
-const startSession = (streamers, activityType, activity, startTime) => {
+const startSession = (streamers, activityType, activity, startTime, topicString) => {
   log.debug('Attempting to start session...')
   const id = currentSessionId += 1
   const session = {
@@ -62,6 +118,7 @@ const startSession = (streamers, activityType, activity, startTime) => {
     activity,
     startTime,
     endTime: null,
+    topicString,
   }
   log.debug(session, 'Starting session:')
   sessions.push(session)
