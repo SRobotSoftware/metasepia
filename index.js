@@ -54,6 +54,7 @@ const parseTopic = (channel, topic, nick, message) => {
   if (!topicTrackingChannels.some(x => x === channel)) return null
   // Short circuit if we get a topic message from a source OTHER than a user
   if (message.command !== 'TOPIC') return null
+
   log.debug('Topic Change Detected:', topic)
 
   const streamers = getStreamers(topic)
@@ -126,7 +127,7 @@ const getActivity = (type, str) => {
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
   // eslint-disable-next-line prefer-destructuring
-  const parsedCommand = /!(\S*)/.exec(message)
+  const parsedCommand = /^!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
   if (to[0] === '#' && command) {
     if (commands.hasOwnProperty(command)) {
