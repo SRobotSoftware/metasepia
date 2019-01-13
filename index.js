@@ -4,90 +4,30 @@
 
 const Irc = require('irc')
 const Pino = require('pino')
+const config = require('config')
+const mysql = require('mysql')
 
 /*
 **  Config
 */
 
-// TODO: Move config to actual configuration, convict?
-const pinoConfig = {
-  level: 'trace',
-}
-
-const ircConfig = {
-  channels: [
-    '#skwid',
-    /* Copied over from GoaLitium's snippets */
-    // '#dopefish_lives',
-    // '#freamonsmind',
-    // '#weeklyweebshit',
-    // '#dopelives.fi',
-    // '#dopefish_agdq',
-    // '#dopefish_sgdq',
-    // '#dopefish_gdq',
-  ],
-  username: 'Metasepia',
-  realName: 'Metasepia Pfefferi',
-  autoRejoin: true,
-  floodProtection: true,
-  autoConnect: false,
-}
-
-const urlWords = [
-  'http://www.hitbox.tv/',
-  'http://www.hitbox.tv/embed/',
-  'www.hitbox.tv/',
-  'www.hitbox.tv/embed/',
-  'http://hitbox.tv/',
-  'http://hitbox.tv/embed/',
-  'http://www.twitch.tv/',
-  'www.twitch.tv/',
-  'http://www.livestream.com/',
-  'www.livestream.com/',
-  'http://www.ustream.com/channel/',
-  'www.ustream.com/channel/',
-]
-
-const streamerAliases = [
-  ['dopefish', 'dopefish_lives', 'dope', 'laddergoat'],
-  ['arch', 'a', 'a-', 'a_'],
-  ['boomer', 'booom3', 'booom', 'iron_boomer'],
-  ['soulSilver', 'soul'],
-  ['sir_Andersen', 'sirandersen', 'andersen', 'sir andersen'],
-  ['qipz', 'chips'],
-  ['flippinKamikaze', 'flippin', 'kamikaze', 'flip'],
-  ['ramstrong', 'ram'],
-  ['po_', 'po',],
-  ['lexi', 'lexitheswift'],
-  ['lewishM', 'lewish', 'animeWeedLord'],
-  ['fateweaver', 'splitweaver',],
-  ['fgw_wolf', 'fgwwolf', 'wolf'],
-  ['derpfoot', 'foot'],
-  ['i-h', 'ih', 'ironheart', 'I-HBot'],
-  ['ratix', 'www', 'warau'],
-  ['suitepee', 'suite', 'pee'],
-  ['ska', 'butts', 'sittits'],
-  ['q', '???', 'cue', 'mystery'],
-  ['jimmy', 'did nothing wrong'],
-  ['hitman_spike', 'hitman', 'spike'],
-  ['darkZoma', 'zoma'],
-  ['greenMiscreant', 'greene', 'tutturuu'],
-  ['skwid', 'mcskwid'],
-  ['qeird', 'meryl', 'futa', 'futanari'],
-  ['rumia', 'rumiapilkington', 'circle nine', 'circle9'],
-  ['danofthetubes', 'dan'],
-  ['gutsmansass', 'guts', 'gutsman', 'gutsmang'],
-]
+const pinoConfig = config.get('pinoConfig')
+const ircConfig = config.get('ircConfig')
+const dbConfig = config.get('dbConfig')
+const urlWords = config.get('meta.urlWords')
+const streamerAliases = config.get('meta.streamerAliases')
 
 /*
 **  Initialization
 */
 
+const db = mysql.createConnection(dbConfig)
 const client = new Irc.Client('irc.quakenet.org', 'metasepia', ircConfig)
 const log = Pino(pinoConfig)
 
-let currentSessionId = 0
 const sessions = []
+
+let forceKill = false
 
 /*
 **  Functions
@@ -115,56 +55,73 @@ const parseTopic = (channel, topic, nick, message) => {
   if (message.command !== 'TOPIC') return null
   log.debug('Topic Change Detected:', topic)
 
-  // Begin actual parsing
-  // These regexes are going to need a lot of work...
   const streamer = getStreamers(topic)
   const game = getActivity('game', topic)
-  log.debug({ streamer, game })
 
-  endSession(currentSessionId)
-  currentSessionId = startSession(streamer, 'game', game, Date.now(), topic)
+  if (streamer && game)
+    startSession(streamer, 'game', game, topic)
+  else
+    endSession()
 }
 
-const startSession = (streamers, activityType, activity, startTime, topicString) => {
-  log.debug('Attempting to start session...')
-  const id = currentSessionId += 1
-  const session = {
-    id,
-    streamer: streamers,
-    activityType,
-    activity,
-    startTime,
-    endTime: null,
-    topicString,
-  }
-  log.debug(session, 'Starting session:')
-  sessions.push(session)
-  return id
+const startSession = (streamers, activityType, activity, topicString) => {
+  log.debug({
+    session: {
+      streamers,
+      activityType,
+      activity,
+      topicString,
+    }
+  }, 'Starting session')
+  // Don't worry about calling endSession first
+  // newSession will automatically close any previous sessions
+  db.query({
+    sql: 'call newSession(?, ?, ?, ?)',
+    values: [streamers, activity, topicString, activityType]
+  }, (err, res) => {
+    if (err) return log.error(err)
+    const sessionId = res[0][0].session_id
+    log.debug({ sessionId }, 'Session successfully started')
+  })
+  return null
 }
 
-const endSession = id => {
-  log.debug('Ending session:', id, '...')
-  if (id === 0) return null
-  const session = sessions.find(x => x.id === id)
-  if (session.endTime === null) session.endTime = Date.now()
+const endSession = () => {
+  log.debug('Ending session')
+  db.query({ sql: 'call endSession()' }, (err, res) => {
+    if (err) return log.error(err)
+    log.debug({ results: res }, 'Session successfully ended')
+  })
 }
 
 const getStreamers = str => {
   log.debug('Getting Streamers...')
+  // TODO: Process on found streamers to:
+  // strip extra whitespace
+  // ensure lower case
+  // strip funny characters
   const streamer = /Streamers?:\s?(.*?)\s?\|/.exec(str)
   log.debug('Found:', streamer)
-  return streamer[1]
+  return streamer[1].toLowerCase()
 }
 
 const getActivityType = str => {
+  // TODO: Process on found activity to:
+  // strip extra whitespace
+  // ensure lower case
+  // strip funny characters
   return str
 }
 
 const getActivity = (type, str) => {
   log.debug('Getting Activity...')
+  // TODO: Process on found activity to:
+  // strip extra whitespace
+  // ensure lower case
+  // strip funny characters
   const activity = /Game:\s?(.*?)\s?(\||$)/.exec(str)
   log.debug('Found:', activity)
-  return activity[1]
+  return activity[1].toLowerCase()
 }
 
 const parseMessage = (from, to, message) => {
@@ -173,10 +130,11 @@ const parseMessage = (from, to, message) => {
   const parsedCommand = /!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
   if (to[0] === '#' && command) {
-    if (commands.hasOwnProperty(command))
+    if (commands.hasOwnProperty(command)) {
+      log.debug({ command }, `Command parsed: ${command}`)
       commands[command](from, to, message)
-    else
-      client.say(to, 'I\'m sorry but I do not recognize that command.')
+    } else
+      log.debug({ command }, `Unrecognized Command given: ${command}`)
   }
 }
 
@@ -207,14 +165,21 @@ const currentlyPlaying = (from, to, message) => {
   return null
 }
 
-const list = (from, to, message) => {
-  log.debug({ sessions }, 'Sessions dump:')
-}
-
 const shutdown = (code = 0, reason = '') => {
-  log.debug('Shutting Down', reason)
+  if (forceKill) {
+    log.debug('!!! FORCING SHUTDOWN !!!')
+    db.destroy()
+    client.conn.destroy()
+    process.exit(1)
+  }
+  log.debug({ reason }, 'Shutting Down')
   const message = (code === 0) ? 'Shutting Down' : 'Error'
-  client.disconnect(message, () => process.exit(code))
+  db.end(err => {
+    if (err) log.error(err)
+    log.debug('DB: Disconnected')
+    client.disconnect(message, () => process.exit(code))
+  })
+  forceKill = true
 }
 
 // Command mapping
@@ -225,7 +190,6 @@ const commands = {
   'firstplayed': firstPlayed,
   'totalplayed': totalPlayed,
   'currentlyplaying': currentlyPlaying,
-  'l': list,
   'discord': linkDiscord,
 }
 
@@ -245,4 +209,8 @@ process.on('uncaughtException', err => shutdown(1, err))
 */
 
 log.debug('Connecting...')
-client.connect()
+db.connect(err => {
+  if (err) return shutdown(1, err)
+  log.debug(`DB: Connected as id ${db.threadId}`)
+  client.connect()
+})
