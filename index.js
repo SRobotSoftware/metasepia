@@ -102,6 +102,8 @@ const sessions = []
 ** allow for default parameters apparently.
 **
 ** Unmapped Activities Count: select COUNT(activity_raw) as `Unmapped Activities Count` from activities_mapping where ISNULL(fk_activity_types)
+** This is used to alert the operator if there's any wacky new activity types that aren't
+** yet mapped to one of the few "normal" activities
 **
 ** Start session: call newSession(streamer, activity, raw_topic, activity_type)
 ** Start session returns session_id and will call endSession() before starting a new one
