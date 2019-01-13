@@ -97,7 +97,9 @@ const sessions = []
 ** SQL COMMANDS
 ** LastPlayed: select * from sessions_view limit 1
 ** FirstPlayed: select * from sessions_view order by session_id asc limit 1
-** TotalPlayed:
+** TotalPlayed: call totalSession('%activity%', '%streamer%')
+** totalSession requires you to pass '%%' as defaults, mysql doesn't
+** allow for default parameters apparently.
 **
 ** Unmapped Activities Count: select COUNT(activity_raw) as `Unmapped Activities Count` from activities_mapping where ISNULL(fk_activity_types)
 **
