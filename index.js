@@ -14,8 +14,8 @@ const mysql = require('mysql')
 const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('ircConfig')
 const dbConfig = config.get('dbConfig')
-const urlWords = config.get('meta.urlWords')
-const streamerAliases = config.get('meta.streamerAliases')
+// const urlWords = config.get('meta.urlWords')
+// const streamerAliases = config.get('meta.streamerAliases')
 const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 
 /*
@@ -58,11 +58,12 @@ const parseTopic = (channel, topic, nick, message) => {
   if (message.command !== 'TOPIC') return null
   log.debug('Topic Change Detected:', topic)
 
-  const streamer = getStreamers(topic)
-  const game = getActivity('game', topic)
+  const streamers = getStreamers(topic)
+  const activityType = getActivityType(topic)
+  const activity = getActivity(activityType, topic)
 
-  if (streamer && game)
-    startSession(streamer, 'game', game, topic)
+  if (streamers && activity)
+    startSession(streamers, activityType, activity, topic)
   else
     endSession()
 }
@@ -100,30 +101,27 @@ const endSession = () => {
 const getStreamers = str => {
   log.debug('Getting Streamers...')
   // TODO: Process on found streamers to:
-  // strip extra whitespace
-  // ensure lower case
   // strip funny characters
-  const streamer = /Streamers?:\s?(.*?)\s?\|/.exec(str)
-  log.debug('Found:', streamer)
-  return streamer[1].toLowerCase()
+  const streamers = /Streamers?:(?:\s*)(.*?)(?:\s*)\|/.exec(str)
+  log.debug({ streamers }, 'STREAMERS RESULT')
+  return streamers[1].toLowerCase()
 }
 
 const getActivityType = str => {
+  log.debug('Getting Activity Type...')
   // TODO: Process on found activity to:
-  // strip extra whitespace
-  // ensure lower case
   // strip funny characters
-  return str
+  const activityType = /\|(?:\s*)(\S+)(?:\s*):/.exec(str)
+  log.debug({ activityType }, 'ACTIVITY TYPE RESULT')
+  return activityType[1].toLowerCase()
 }
 
 const getActivity = (type, str) => {
   log.debug('Getting Activity...')
   // TODO: Process on found activity to:
-  // strip extra whitespace
-  // ensure lower case
   // strip funny characters
-  const activity = /Game:\s?(.*?)\s?(\||$)/.exec(str)
-  log.debug('Found:', activity)
+  const activity = (new RegExp(`${type}:(?:\\s*)(.*?)(?:\\s*)(?:\\||$)`, 'i')).exec(str)
+  log.debug({ activity }, 'ACTIVITY RESULT')
   return activity[1].toLowerCase()
 }
 
