@@ -14,22 +14,41 @@ A chatbot for the DopefishLives online streaming community.
 
 ## Design Considerations
 
-Sessions:
 
-session_id|streamer|activity_type|activity|start_timestamp|end_timestamp|raw_topic_string
----|---|---|---|---|---|---
-0|Skwid|Game|Dark Souls|1547077201130|1547077210710| 'Streamer: Skwid | Game: Dark Souls | #dopefish_gdq'
-1|Dopefish, Fgw_wolf, GUTSMANSASS|Movie|Breakin' 2: Electric Boogaloo|1547077201130|1547077210710| ''
+### Data
+sessions:
+session_id|streamer|activity|start_timestamp|end_timestamp|raw_topic_string|fk_activities_mapping
+---|---|---|---|---|---|---|---
+0|skwid|dark souls|SQL_TIMESTAMP|SQL_TIMESTAMP|'Streamer: Skwid \| Game: Dark Souls \| #dopefish_gdq'|0
+1|mcskwid|dark souls 2|SQL_TIMESTAMP|SQL_TIMESTAMP|'Streamer: McSkwid \| Gaem: Dark Souls 2'|1
 
+activities_mapping:
+activities_mapping_id|activity_raw|fk_activity_types
+---|---|---
+0|game|0
+1|gaem|0
+
+activity_types:
+activity_types_id|activity_type
+---|---
+0|game
+1|movie
+
+### Usage
 Commands:
 * !(played|lastplayed) - Last known session of a game/streamer
 * !firstplayed - First known session of a game/streamer
 * !totalplayed - Total playtime across all sessions of a game/streamer + first session + last session + average session length
 * !currentlyplaying - Current session information
+* !playedToday - A totalplayed limited to the last 24 hours
+* !discord - A link to the discord server
+* !onDemand - A link to the On Demand page
 
 Options:
-* (game|g): specific game
-* (streamer|s): specific streamer
+* These are valid for lastplayed, firstplayed, and totalplayed
+* g: specific game
+* s: specific streamer
+* t: specific activity
 
 Examples:
 ```
