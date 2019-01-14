@@ -23,12 +23,14 @@ session_id|streamer|start_timestamp|end_timestamp|raw_topic_string|fk_activities
 1|mcskwid|dark souls 2|SQL_TIMESTAMP|SQL_TIMESTAMP|'Streamer: McSkwid \| Gaem: Dark Souls 2'|1
 
 activities_mapping:
+
 activities_mapping_id|activity_raw|fk_activity_types
 ---|---|---
 0|game|0
 1|gaem|0
 
 activity_types:
+
 activity_types_id|activity_type
 ---|---
 0|game
