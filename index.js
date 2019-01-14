@@ -139,11 +139,11 @@ const parseMessage = (from, to, message) => {
   }
 }
 
-const linkDiscord = (from, to, message) => {
+const linkDiscord = (from, to) => {
   client.say(to, `${from}: https://discord.gg/R7cazz8`)
 }
 
-const linkOnDemand = (from, to, message) => {
+const linkOnDemand = (from, to) => {
   client.say(to, `${from}: http://vacker.tv/ondemand/`)
 }
 
@@ -205,17 +205,17 @@ const lastPlayed = (from, to, message) => {
   })
 }
 
-const firstPlayed = (from, to, message) => {
-  return null
-}
+// const firstPlayed = (from, to, message) => {
+//   return null
+// }
 
-const totalPlayed = (from, to, message) => {
-  return null
-}
+// const totalPlayed = (from, to, message) => {
+//   return null
+// }
 
-const currentlyPlaying = (from, to, message) => {
-  return null
-}
+// const currentlyPlaying = (from, to, message) => {
+//   return null
+// }
 
 const shutdown = (code = 0, reason = '') => {
   if (forceKill) {
