@@ -129,7 +129,8 @@ const parseMessage = (from, to, message) => {
   // eslint-disable-next-line prefer-destructuring
   const parsedCommand = /^!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
-  if (to[0] === '#' && command) {
+  if ((to[0] === '#' || to === ircConfig.name) && command) {
+    if (to === ircConfig.name) to = from
     if (commands.hasOwnProperty(command)) {
       log.debug({ command }, `Command parsed: ${command}`)
       commands[command](from, to, message)
@@ -139,14 +140,51 @@ const parseMessage = (from, to, message) => {
 }
 
 const linkDiscord = (from, to, message) => {
-  client.say(to, `${from}, our discord server is available here: https://discord.gg/meu4Jx`)
+  client.say(to, `${from}, our discord server is available here: https://discord.gg/R7cazz8`)
+}
+
+const linkOnDemand = (from, to, message) => {
+  client.say(to, `${from}, our on demand videos are available here: http://vacker.tv/ondemand/`)
+}
+
+const parseOptions = str => {
+  // g: game
+  // t: type
+  // s: streamer
+  // const reg = new RegExp('([gts]):(?:\\s*)(.*?)(?:\\s*(?:\\S:)|$)', 'i')
+  const g = /g:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
+  const t = /t:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
+  const s = /s:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
+  return { g, t, s }
+}
+const secondsSince = dateStr => {
+  // 25200000 is 7 hours in milliseconds for the purposes of local testing with timezone differences
+  const then = (new Date(dateStr)).getTime() - 25200000
+  const now = Date.now()
+  const seconds = Math.floor((now - then) / 1000)
+  return seconds
 }
 
 const lastPlayed = (from, to, message) => {
-  const output = (!session.streamer)
-    ? `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
-    : `${to}, ${session.streamer} played ${session.activity} for ${Math.floor(duration / 1000)} seconds`
-  client.say(to, output)
+  // const options = parseOptions(message)
+  db.query({
+    sql: 'select * from sessions_view limit 1'
+  }, (err, res) => {
+    if (err) return log.error(err)
+    log.debug({ res })
+    if (!res.length) return null
+
+    // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
+    if (to === '#dopefish_lives') return null
+
+    // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
+    // eslint-disable-next-line prefer-destructuring
+    res = res[0]
+
+    // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
+    const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
+    client.say(to, output)
+  })
 }
 
 const firstPlayed = (from, to, message) => {
@@ -187,6 +225,8 @@ const commands = {
   'totalplayed': totalPlayed,
   'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
+  'ondemand': linkOnDemand,
+  // 'playedtoday': playedToday,
 }
 
 /*
