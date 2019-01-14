@@ -18,7 +18,7 @@ A chatbot for the DopefishLives online streaming community.
 ### Data
 sessions:
 session_id|streamer|start_timestamp|end_timestamp|raw_topic_string|fk_activities_mapping
----|---|---|---|---|---|---|---
+---|---|---|---|---|---|---
 0|skwid|dark souls|SQL_TIMESTAMP|SQL_TIMESTAMP|'Streamer: Skwid \| Game: Dark Souls \| #dopefish_gdq'|0
 1|mcskwid|dark souls 2|SQL_TIMESTAMP|SQL_TIMESTAMP|'Streamer: McSkwid \| Gaem: Dark Souls 2'|1
 
