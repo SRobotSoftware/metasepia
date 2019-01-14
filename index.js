@@ -140,11 +140,11 @@ const parseMessage = (from, to, message) => {
 }
 
 const linkDiscord = (from, to, message) => {
-  client.say(to, `${from}, our discord server is available here: https://discord.gg/R7cazz8`)
+  client.say(to, `${from}: https://discord.gg/R7cazz8`)
 }
 
 const linkOnDemand = (from, to, message) => {
-  client.say(to, `${from}, our on demand videos are available here: http://vacker.tv/ondemand/`)
+  client.say(to, `${from}: http://vacker.tv/ondemand/`)
 }
 
 const parseOptions = str => {

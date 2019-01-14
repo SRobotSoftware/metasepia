@@ -4,7 +4,7 @@
   },
   "irc": {
     "server": "irc.quakenet.org",
-    "name": "metasepia",
+    "name": "Metasepia",
     "config": {
       "channels": [
         "#skwid",
