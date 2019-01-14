@@ -151,12 +151,18 @@ const parseOptions = str => {
   // g: game
   // t: type
   // s: streamer
-  // const reg = new RegExp('([gts]):(?:\\s*)(.*?)(?:\\s*(?:\\S:)|$)', 'i')
-  const g = /g:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
-  const t = /t:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
-  const s = /s:(?: \s *) (.*?)(?: \s * (?: \S: ) | $)/i.exec(str)
-  return { g, t, s }
+  const g = /g:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
+  const t = /t:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
+  const s = /s:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
+  const res = {
+    g: g ? g[1] : null,
+    t: t ? t[1] : null,
+    s: s ? s[1] : null,
+  }
+  log.debug(res, 'OPTIONS RESULTS')
+  return res
 }
+
 const secondsSince = dateStr => {
   // 25200000 is 7 hours in milliseconds for the purposes of local testing with timezone differences
   const then = (new Date(dateStr)).getTime() - 25200000
@@ -166,10 +172,21 @@ const secondsSince = dateStr => {
 }
 
 const lastPlayed = (from, to, message) => {
-  // const options = parseOptions(message)
-  db.query({
-    sql: 'select * from sessions_view limit 1'
-  }, (err, res) => {
+  const options = parseOptions(message)
+  const optionsQuery = [' WHERE ']
+
+  if (Object.keys(options).some(x => options[x])) {
+    if (options.g) optionsQuery.push(`\`activity\` LIKE '%${options.g}%'`)
+    if (options.t) optionsQuery.push(`\`activity_type\` LIKE '%${options.t}%'`)
+    if (options.s) optionsQuery.push(`\`streamer\` LIKE '%${options.s}%'`)
+    if (optionsQuery.length > 2) optionsQuery.map((x, i) => (i > 0) ? ' AND ' + x : x)
+  }
+
+  const where = optionsQuery.length > 1 ? optionsQuery.join('') : ''
+
+  const sql = `select * from sessions_view${where} limit 1`
+  log.debug({ sql }, 'SQL QUERY RESULT')
+  db.query({ sql }, (err, res) => {
     if (err) return log.error(err)
     log.debug({ res })
     if (!res.length) return null
@@ -182,6 +199,7 @@ const lastPlayed = (from, to, message) => {
     res = res[0]
 
     // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
+    // TODO: This needs to spit out time in a readable fashion
     const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
     client.say(to, output)
   })
@@ -207,11 +225,10 @@ const shutdown = (code = 0, reason = '') => {
     process.exit(1)
   }
   log.debug({ reason }, 'Shutting Down')
-  const message = (code === 0) ? 'Shutting Down' : 'Error'
   db.end(err => {
     if (err) log.error(err)
     log.debug('DB: Disconnected')
-    client.disconnect(message, () => process.exit(code))
+    client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
   })
   forceKill = true
 }
@@ -221,9 +238,10 @@ const commands = {
   'p': lastPlayed,
   'played': lastPlayed,
   'lastplayed': lastPlayed,
-  'firstplayed': firstPlayed,
-  'totalplayed': totalPlayed,
-  'currentlyplaying': currentlyPlaying,
+  'last': lastPlayed,
+  // 'firstplayed': firstPlayed,
+  // 'totalplayed': totalPlayed,
+  // 'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
   // 'playedtoday': playedToday,

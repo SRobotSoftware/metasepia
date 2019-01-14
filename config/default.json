@@ -7,8 +7,7 @@
     "name": "Metasepia",
     "config": {
       "channels": [
-        "#skwid",
-        "#dopefish_lives"
+        "#skwid"
       ],
       "username": "Metasepia",
       "realName": "Metasepia Pfefferi",
@@ -25,7 +24,7 @@
   },
   "meta": {
     "topicTrackingChannels": [
-      "#dopefish_lives"
+      "#skwid"
     ],
     "urlWords": [
       "http: //www.hitbox.tv/",
