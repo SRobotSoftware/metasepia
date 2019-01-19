@@ -149,9 +149,9 @@ const parseOptions = str => {
   // g: game
   // t: type
   // s: streamer
-  const g = /g:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
-  const t = /t:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
-  const s = /s:(?:\s*)(.*?)(?:\s*(?:\S:)|$)/i.exec(str)
+  const g = /g:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
+  const t = /t:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
+  const s = /s:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
   const res = {
     g: g ? g[1] : null,
     t: t ? t[1] : null,
