@@ -6,6 +6,7 @@ const Irc = require('irc')
 const Pino = require('pino')
 const config = require('config')
 const knex = require('knex')
+const moment = require('moment')
 
 /*
 **  Config
@@ -161,14 +162,6 @@ const parseOptions = str => {
   return res
 }
 
-const secondsSince = dateStr => {
-  // 25200000 is 7 hours in milliseconds for the purposes of local testing with timezone differences
-  const then = (new Date(dateStr)).getTime() - 25200000
-  const now = Date.now()
-  const seconds = Math.floor((now - then) / 1000)
-  return seconds
-}
-
 const playedConstructor = message => {
   const options = parseOptions(message)
 
@@ -203,7 +196,7 @@ const lastPlayed = (from, to, message) => {
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${moment.duration(res.duration_in_seconds, 'seconds').humanize()}, ${moment(res.end_timestamp).fromNow()}`
       client.say(to, output)
     })
     .catch(err => log.error(err))
@@ -228,7 +221,7 @@ const firstPlayed = (from, to, message) => {
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${moment.duration(res.duration_in_seconds, 'seconds').humanize()}, ${moment(res.end_timestamp).fromNow()} seconds ago`
       client.say(to, output)
     })
     .catch(err => log.error(err))
@@ -243,7 +236,7 @@ const totalPlayed = (from, to, message) => {
       // eslint-disable-next-line prefer-destructuring
       const results = res[0][0][0]
       if (results.duration === null) return null
-      const output = `${options.g} was played for a total of ${results.duration} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
+      const output = `${options.g} was played for a total of ${moment.duration(results.duration, 'seconds').humanize()} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
       client.say(to, output)
     })
     .catch(err => log.error(err))
