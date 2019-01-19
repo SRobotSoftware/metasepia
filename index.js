@@ -169,10 +169,10 @@ const secondsSince = dateStr => {
   return seconds
 }
 
-const lastPlayed = (from, to, message) => {
+const playedConstructor = message => {
   const options = parseOptions(message)
 
-  db.select()
+  return db.select()
     .from('sessions_view')
     .where(builder => {
       if (options.g) builder.andWhere('activity', 'LIKE', `%${options.g}%`)
@@ -183,6 +183,10 @@ const lastPlayed = (from, to, message) => {
         else builder.andWhere('streamer', 'LIKE', `%${options.s}%`)
       })
     })
+}
+
+const lastPlayed = (from, to, message) => {
+  playedConstructor(message)
     .limit(1)
     .then(res => {
       if (!res.length) {
@@ -206,15 +210,7 @@ const lastPlayed = (from, to, message) => {
 }
 
 const firstPlayed = (from, to, message) => {
-  const options = parseOptions(message)
-
-  db.select()
-    .from('sessions_view')
-    .where(builder => {
-      if (options.g) builder.where('activity', 'LIKE', `%${options.g}%`)
-      if (options.t) builder.where('activity_type', 'LIKE', `%${options.t}%`)
-      if (options.s) builder.where('streamer', 'LIKE', `%${options.s}%`)
-    })
+  playedConstructor(message)
     .limit(1)
     .orderBy('session_id', 'ASC')
     .then(res => {
