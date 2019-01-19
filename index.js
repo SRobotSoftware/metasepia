@@ -15,7 +15,7 @@ const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
 // const urlWords = config.get('meta.urlWords')
-// const streamerAliases = config.get('meta.streamerAliases')
+const streamerAliases = config.get('meta.streamerAliases')
 const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 
 /*
@@ -175,9 +175,13 @@ const lastPlayed = (from, to, message) => {
   db.select()
     .from('sessions_view')
     .where(builder => {
-      if (options.g) builder.where('activity', 'LIKE', `%${options.g}%`)
-      if (options.t) builder.where('activity_type', 'LIKE', `%${options.t}%`)
-      if (options.s) builder.where('streamer', 'LIKE', `%${options.s}%`)
+      if (options.g) builder.andWhere('activity', 'LIKE', `%${options.g}%`)
+      if (options.t) builder.andWhere('activity_type', 'LIKE', `%${options.t}%`)
+      if (options.s) builder.andWhere(builder => {
+        const aliases = streamerAliases.find(x => x.some(y => y.toLowerCase() === options.s))
+        if (aliases) aliases.forEach(alias => builder.orWhere('streamer', 'LIKE', `%${alias}%`))
+        else builder.andWhere('streamer', 'LIKE', `%${options.s}%`)
+      })
     })
     .limit(1)
     .then(res => {
