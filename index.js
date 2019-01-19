@@ -5,7 +5,7 @@
 const Irc = require('irc')
 const Pino = require('pino')
 const config = require('config')
-const mysql = require('mysql')
+const knex = require('knex')
 
 /*
 **  Config
@@ -22,9 +22,9 @@ const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 **  Initialization
 */
 
-const db = mysql.createConnection(dbConfig)
-const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
 const log = Pino(pinoConfig)
+const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
+const db = knex(dbConfig)
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
 
@@ -78,30 +78,28 @@ const startSession = (streamers, activityType, activity, topicString) => {
   }, 'Starting session')
   // Don't worry about calling endSession first
   // newSession will automatically close any previous sessions
-  db.query({
-    sql: 'call newSession(?, ?, ?, ?)',
-    values: [streamers, activity, topicString, activityType]
-  }, (err, res) => {
-    if (err) return log.error(err)
-    const sessionId = res[0][0].session_id
-    log.debug({ sessionId }, 'Session successfully started')
-  })
-  return null
+  db.raw('call newSession(?, ?, ?, ?)', [streamers, activity, topicString, activityType])
+    .then(res => {
+      const sessionId = res[0][0].session_id
+      log.debug({ sessionId }, 'Session successfully started')
+    })
+    .catch(err => {
+      log.error(err)
+    })
 }
 
 const endSession = () => {
   log.debug('Ending session')
-  db.query({ sql: 'call endSession()' }, (err, res) => {
-    if (err) return log.error(err)
-    log.debug({ results: res }, 'Session successfully ended')
-  })
+  db.raw('call endSession()')
+    .then(res => log.debug({ results: res }, 'Session successfully ended'))
+    .catch(err => log.error(err))
 }
 
 const getStreamers = str => {
   log.debug('Getting Streamers...')
   // TODO: Process on found streamers to:
   // strip funny characters
-  const streamers = /Streamers?:(?:\s*)(.*?)(?:\s*)\|/.exec(str)
+  const streamers = /streamers?:(?:\s*)(.*?)(?:\s*)\|/i.exec(str)
   log.debug({ streamers }, 'STREAMERS RESULT')
   return streamers[1].toLowerCase()
 }
@@ -173,63 +171,101 @@ const secondsSince = dateStr => {
 
 const lastPlayed = (from, to, message) => {
   const options = parseOptions(message)
-  const optionsQuery = [' WHERE ']
 
-  if (Object.keys(options).some(x => options[x])) {
-    if (options.g) optionsQuery.push(`\`activity\` LIKE '%${options.g}%'`)
-    if (options.t) optionsQuery.push(`\`activity_type\` LIKE '%${options.t}%'`)
-    if (options.s) optionsQuery.push(`\`streamer\` LIKE '%${options.s}%'`)
-    if (optionsQuery.length > 2) optionsQuery.map((x, i) => (i > 0) ? ' AND ' + x : x)
-  }
+  db.select()
+    .from('sessions_view')
+    .where(builder => {
+      if (options.g) builder.where('activity', 'LIKE', `%${options.g}%`)
+      if (options.t) builder.where('activity_type', 'LIKE', `%${options.t}%`)
+      if (options.s) builder.where('streamer', 'LIKE', `%${options.s}%`)
+    })
+    .limit(1)
+    .then(res => {
+      if (!res.length) {
+        client.say(to, `I didn't find any results for "${message}"`)
+        return null
+      }
 
-  const where = optionsQuery.length > 1 ? optionsQuery.join('') : ''
+      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
+      if (to === '#dopefish_lives') return null
 
-  const sql = `select * from sessions_view${where} limit 1`
-  log.debug({ sql }, 'SQL QUERY RESULT')
-  db.query({ sql }, (err, res) => {
-    if (err) return log.error(err)
-    log.debug({ res })
-    if (!res.length) return null
+      // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
+      // eslint-disable-next-line prefer-destructuring
+      res = res[0]
 
-    // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
-    if (to === '#dopefish_lives') return null
-
-    // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
-    // eslint-disable-next-line prefer-destructuring
-    res = res[0]
-
-    // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
-    // TODO: This needs to spit out time in a readable fashion
-    const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
-    client.say(to, output)
-  })
+      // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
+      // TODO: This needs to spit out time in a readable fashion
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
+      client.say(to, output)
+    })
+    .catch(err => log.error(err))
 }
 
-// const firstPlayed = (from, to, message) => {
-//   return null
-// }
+const firstPlayed = (from, to, message) => {
+  const options = parseOptions(message)
 
-// const totalPlayed = (from, to, message) => {
-//   return null
-// }
+  db.select()
+    .from('sessions_view')
+    .where(builder => {
+      if (options.g) builder.where('activity', 'LIKE', `%${options.g}%`)
+      if (options.t) builder.where('activity_type', 'LIKE', `%${options.t}%`)
+      if (options.s) builder.where('streamer', 'LIKE', `%${options.s}%`)
+    })
+    .limit(1)
+    .orderBy('session_id', 'ASC')
+    .then(res => {
+      if (!res.length) {
+        client.say(to, `I didn't find any results for "${message}"`)
+        return null
+      }
+
+      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
+      if (to === '#dopefish_lives') return null
+
+      // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
+      // eslint-disable-next-line prefer-destructuring
+      res = res[0]
+
+      // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
+      // TODO: This needs to spit out time in a readable fashion
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${res.duration_in_seconds} seconds ${secondsSince(res.end_timestamp)} seconds ago`
+      client.say(to, output)
+    })
+    .catch(err => log.error(err))
+  return null
+}
+
+const totalPlayed = (from, to, message) => {
+  const options = parseOptions(message)
+  db.raw('call totalSession(?, ?)', [`%${options.g}%`, `%${options.s}%`])
+    .then(res => {
+      log.debug({ res }, 'RESULTS')
+      // eslint-disable-next-line prefer-destructuring
+      const results = res[0][0][0]
+      if (results.duration === null) return null
+      const output = `${options.g} was played for a total of ${results.duration} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
+      client.say(to, output)
+    })
+    .catch(err => log.error(err))
+  return null
+}
 
 // const currentlyPlaying = (from, to, message) => {
+//   return null
+// }
+
+// const playedToday = (from, to, message) => {
 //   return null
 // }
 
 const shutdown = (code = 0, reason = '') => {
   if (forceKill) {
     log.debug('!!! FORCING SHUTDOWN !!!')
-    db.destroy()
     client.conn.destroy()
     process.exit(1)
   }
   log.debug({ reason }, 'Shutting Down')
-  db.end(err => {
-    if (err) log.error(err)
-    log.debug('DB: Disconnected')
-    client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
-  })
+  client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
   forceKill = true
 }
 
@@ -239,8 +275,8 @@ const commands = {
   'played': lastPlayed,
   'lastplayed': lastPlayed,
   'last': lastPlayed,
-  // 'firstplayed': firstPlayed,
-  // 'totalplayed': totalPlayed,
+  'firstplayed': firstPlayed,
+  'totalplayed': totalPlayed,
   // 'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
@@ -263,8 +299,4 @@ process.on('uncaughtException', err => shutdown(1, err))
 */
 
 log.debug('Connecting...')
-db.connect(err => {
-  if (err) return shutdown(1, err)
-  log.debug(`DB: Connected as id ${db.threadId}`)
-  client.connect()
-})
+client.connect()

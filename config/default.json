@@ -4,23 +4,26 @@
   },
   "irc": {
     "server": "irc.quakenet.org",
-    "name": "Metasepia",
+    "name": "Metasepia-Test",
     "config": {
       "channels": [
         "#skwid"
       ],
-      "username": "Metasepia",
-      "realName": "Metasepia Pfefferi",
+      "username": "Metasepia-Test",
+      "realName": "Metasepia Pfefferi - TEST",
       "autoRejoin": true,
       "floodProtection": true,
       "autoConnect": false
     }
   },
   "dbConfig": {
-    "host": "secret",
-    "user": "secret",
-    "password": "secret",
-    "database": "secret"
+    "client": "mysql",
+    "connection": {
+      "host": "secret",
+      "user": "secret",
+      "password": "secret",
+      "database": "secret"
+    }
   },
   "meta": {
     "topicTrackingChannels": [

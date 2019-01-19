@@ -14,6 +14,9 @@ A chatbot for the DopefishLives online streaming community.
 
 ## Design Considerations
 
+### Ideas
+keyword exclusion in search
+
 
 ### Data
 sessions:
