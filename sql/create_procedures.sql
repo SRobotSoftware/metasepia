@@ -73,3 +73,12 @@ BEGIN
   select start_t, end_t, duration;
 
 END //
+
+
+DELIMITER //
+CREATE PROCEDURE `countUnmappedActivities`()
+BEGIN
+
+  select COUNT(activity_raw) as `Unmapped Activities Count` from activities_mapping where ISNULL(fk_activity_types);
+
+END //

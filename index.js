@@ -303,4 +303,12 @@ process.on('uncaughtException', err => shutdown(1, err))
 */
 
 log.debug('Connecting...')
-client.connect()
+db.raw('call countUnmappedActivities()')
+  .then(res => {
+    log.warn(res[0][0][0])
+    client.connect()
+  })
+  .catch(err => {
+    log.error(err)
+    shutdown(1, err)
+  })
