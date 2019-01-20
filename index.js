@@ -17,6 +17,7 @@ const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
 const streamerAliases = config.get('meta.streamerAliases')
 const topicTrackingChannels = config.get('meta.topicTrackingChannels')
+const silentChannels = config.get('meta.silentChannels')
 
 /*
 **  Initialization
@@ -141,11 +142,11 @@ const parseMessage = (from, to, message) => {
 }
 
 const linkDiscord = (from, to) => {
-  client.say(to, `${from}: https://discord.gg/R7cazz8`)
+  send(to, `${from}: https://discord.gg/R7cazz8`)
 }
 
 const linkOnDemand = (from, to) => {
-  client.say(to, `${from}: http://vacker.tv/ondemand/`)
+  send(to, `${from}: http://vacker.tv/ondemand/`)
 }
 
 const parseOptions = str => {
@@ -199,7 +200,7 @@ const lastPlayed = (from, to, message) => {
     .limit(options.i + 1 || 1)
     .then(res => {
       if (!res.length) {
-        client.say(to, `I didn't find any results for "${message}"`)
+        send(to, `I didn't find any results for "${message}"`)
         return null
       }
 
@@ -212,7 +213,7 @@ const lastPlayed = (from, to, message) => {
       // TODO: This needs to spit out time in a readable fashion
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
-      client.say(to, output)
+      send(to, output)
     })
     .catch(err => log.error(err))
 }
@@ -225,7 +226,7 @@ const firstPlayed = (from, to, message) => {
     .orderBy('session_id', 'ASC')
     .then(res => {
       if (!res.length) {
-        client.say(to, `I didn't find any results for "${message}"`)
+        send(to, `I didn't find any results for "${message}"`)
         return null
       }
 
@@ -236,7 +237,7 @@ const firstPlayed = (from, to, message) => {
 
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
-      client.say(to, output)
+      send(to, output)
     })
     .catch(err => log.error(err))
   return null
@@ -250,7 +251,7 @@ const totalPlayed = (from, to, message) => {
       const results = res[0][0][0]
       if (results.duration === null) return null
       const output = `${options.g} was played for a total of ${moment.duration(results.duration, 'seconds').humanize()} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
-      client.say(to, output)
+      send(to, output)
     })
     .catch(err => log.error(err))
   return null
@@ -262,7 +263,7 @@ const currentlyPlaying = (from, to) => {
     .limit(1)
     .then(res => {
       if (!res.length) {
-        client.say(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`)
+        send(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`)
         return null
       }
 
@@ -274,9 +275,15 @@ const currentlyPlaying = (from, to) => {
       const duration = moment.duration(moment(res.start_timestamp).diff(moment(), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
-      client.say(to, output)
+      send(to, output)
     })
     .catch(err => log.error(err))
+}
+
+const send = (to, message, notice) => {
+  if (notice) return client.notice(to, message)
+  if (silentChannels.some(channel => channel === to)) return null
+  client.say(to, message)
 }
 
 // const playedToday = (from, to, message) => {
@@ -302,6 +309,7 @@ const commands = {
   'last': lastPlayed,
   'firstplayed': firstPlayed,
   'totalplayed': totalPlayed,
+  'current': currentlyPlaying,
   'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
