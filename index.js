@@ -212,7 +212,7 @@ const lastPlayed = (from, to, message) => {
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).fromNow()}`
       send(to, output)
     })
     .catch(err => log.error(err))
@@ -236,7 +236,7 @@ const firstPlayed = (from, to, message) => {
       res = res[0]
 
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).fromNow()}`
       send(to, output)
     })
     .catch(err => log.error(err))
@@ -272,7 +272,7 @@ const currentlyPlaying = (from, to) => {
 
       res = res[0]
 
-      const duration = moment.duration(moment(res.start_timestamp).diff(moment(), 'milliseconds'), 'milliseconds')
+      const duration = moment.duration(moment.utc(res.start_timestamp).diff(moment.utc(), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
       send(to, output)
