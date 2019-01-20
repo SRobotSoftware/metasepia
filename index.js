@@ -212,7 +212,7 @@ const lastPlayed = (from, to, message) => {
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
       send(to, output)
     })
     .catch(err => log.error(err))
@@ -236,7 +236,7 @@ const firstPlayed = (from, to, message) => {
       res = res[0]
 
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
       send(to, output)
     })
     .catch(err => log.error(err))
