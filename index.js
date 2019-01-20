@@ -15,9 +15,12 @@ const moment = require('moment')
 const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
-const streamerAliases = config.get('meta.streamerAliases')
-const topicTrackingChannels = config.get('meta.topicTrackingChannels')
-const silentChannels = config.get('meta.silentChannels')
+const {
+  streamerAliases,
+  topicTrackingChannels,
+  silentChannels,
+  commandPrefix,
+} = config.get('meta')
 
 /*
 **  Initialization
@@ -112,7 +115,7 @@ const getActivity = (type, str) => {
 
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
-  const parsedCommand = /^!(\S*)/.exec(message)
+  const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
   if ((to[0] === '#' || to === ircConfig.name) && command) {
     if (to === ircConfig.name) to = from
@@ -141,7 +144,7 @@ const parseOptions = str => {
   const t = /t:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
   const s = /s:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
   const e = /e:(?:\s*)([\w\d\s&%$#@!*()_,+=[\]{}'"./\\-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
-  const i = /played:?(?:\s*)-(\d+)/.exec(str)
+  const i = /p(?:layed)?:?(?:\s*)-(\d+)/.exec(str)
   const res = {
     g: g ? g[1] : null,
     t: t ? t[1] : null,
@@ -226,19 +229,10 @@ const firstPlayed = (from, to, message) => {
   return null
 }
 
-const totalPlayed = (from, to, message) => {
-  const options = parseOptions(message)
-  db.raw('call totalSession(?, ?)', [`%${options.g}%`, `%${options.s}%`])
-    .then(res => {
-      log.debug({ res }, 'RESULTS')
-      const results = res[0][0][0]
-      if (results.duration === null) return null
-      const output = `${options.g} was played for a total of ${moment.duration(results.duration, 'seconds').humanize()} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
-      send(to, output)
-    })
-    .catch(err => log.error(err))
-  return null
-}
+// const totalPlayed = (from, to, message) => {
+//   const options = parseOptions(message)
+//   return null
+// }
 
 const currentlyPlaying = (from, to) => {
   db.select()
@@ -291,7 +285,7 @@ const commands = {
   'lastplayed': lastPlayed,
   'last': lastPlayed,
   'firstplayed': firstPlayed,
-  'totalplayed': totalPlayed,
+  // 'totalplayed': totalPlayed,
   'current': currentlyPlaying,
   'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
