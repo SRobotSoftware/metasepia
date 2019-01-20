@@ -15,7 +15,6 @@ const moment = require('moment')
 const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
-// const urlWords = config.get('meta.urlWords')
 const streamerAliases = config.get('meta.streamerAliases')
 const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 
@@ -26,6 +25,7 @@ const topicTrackingChannels = config.get('meta.topicTrackingChannels')
 const log = Pino(pinoConfig)
 const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
 const db = knex(dbConfig)
+
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
 
@@ -50,13 +50,22 @@ let forceKill = false
 ** End session: call endSession()
 */
 
+const leftPad = (str, amount = 2) => {
+  str = str + ''
+  const out = [...str]
+  while (out.length < amount) {
+    out.unshift(0)
+  }
+  return out.join('')
+}
+
 const parseTopic = (channel, topic, nick, message) => {
   // Short circuit if we get a topic message from a channel we don't care about
   if (!topicTrackingChannels.some(x => x === channel)) return null
   // Short circuit if we get a topic message from a source OTHER than a user
   if (message.command !== 'TOPIC') return null
 
-  log.debug('Topic Change Detected:', topic)
+  log.info('Topic Change Detected:', topic)
 
   const streamers = getStreamers(topic)
   const activityType = getActivityType(topic)
@@ -196,7 +205,8 @@ const lastPlayed = (from, to, message) => {
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${moment.duration(res.duration_in_seconds, 'seconds').humanize()}, ${moment(res.end_timestamp).fromNow()}`
+      const duration = moment.duration(res.duration_in_seconds, 'seconds')
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
       client.say(to, output)
     })
     .catch(err => log.error(err))
@@ -221,7 +231,9 @@ const firstPlayed = (from, to, message) => {
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${moment.duration(res.duration_in_seconds, 'seconds').humanize()}, ${moment(res.end_timestamp).fromNow()} seconds ago`
+
+      const duration = moment.duration(res.duration_in_seconds, 'seconds')
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
       client.say(to, output)
     })
     .catch(err => log.error(err))
@@ -253,11 +265,11 @@ const totalPlayed = (from, to, message) => {
 
 const shutdown = (code = 0, reason = '') => {
   if (forceKill) {
-    log.debug('!!! FORCING SHUTDOWN !!!')
+    log.error('!!! FORCING SHUTDOWN !!!')
     client.conn.destroy()
     process.exit(1)
   }
-  log.debug({ reason }, 'Shutting Down')
+  log.warn({ reason }, 'Shutting Down')
   client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
   forceKill = true
 }
@@ -282,7 +294,7 @@ const commands = {
 
 client.addListener('message', parseMessage)
 client.addListener('topic', parseTopic)
-client.addListener('registered', () => log.debug('Client connected...'))
+client.addListener('registered', () => log.info('Client connected...'))
 client.addListener('error', err => shutdown(1, err))
 process.on('SIGINT', () => shutdown())
 process.on('uncaughtException', err => shutdown(1, err))
@@ -291,7 +303,7 @@ process.on('uncaughtException', err => shutdown(1, err))
 **  Run
 */
 
-log.debug('Connecting...')
+log.info('Connecting...')
 db.raw('call countUnmappedActivities()')
   .then(res => {
     log.warn(res[0][0][0])

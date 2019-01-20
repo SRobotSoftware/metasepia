@@ -7,7 +7,8 @@
     "name": "Metasepia-Test",
     "config": {
       "channels": [
-        "#skwid"
+        "#skwid",
+        "#dopefish_lives"
       ],
       "username": "Metasepia-Test",
       "realName": "Metasepia Pfefferi - TEST",
@@ -26,9 +27,7 @@
     }
   },
   "meta": {
-    "topicTrackingChannels": [
-      "#skwid"
-    ],
+    "topicTrackingChannels": [],
     "streamerAliases": [
       [
         "Dopefish",
