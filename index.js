@@ -190,9 +190,6 @@ const lastPlayed = (from, to, message) => {
         return null
       }
 
-      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
-      if (to === '#dopefish_lives') return null
-
       res = res[Math.min(options.i, res.length - 1) || 0]
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
@@ -215,9 +212,6 @@ const firstPlayed = (from, to, message) => {
         send(to, `I didn't find any results for "${message}"`)
         return null
       }
-
-      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
-      if (to === '#dopefish_lives') return null
 
       res = res[0]
 
@@ -243,9 +237,6 @@ const currentlyPlaying = (from, to) => {
         send(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`)
         return null
       }
-
-      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
-      if (to === '#dopefish_lives') return null
 
       res = res[0]
 
