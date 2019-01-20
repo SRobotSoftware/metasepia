@@ -107,8 +107,6 @@ const endSession = () => {
 
 const getStreamers = str => {
   log.debug('Getting Streamers...')
-  // TODO: Process on found streamers to:
-  // strip funny characters
   const streamers = /streamers?:(?:\s*)(.*?)(?:\s*)\|/i.exec(str)
   log.debug({ streamers }, 'STREAMERS RESULT')
   return streamers[1].toLowerCase()
@@ -116,8 +114,6 @@ const getStreamers = str => {
 
 const getActivityType = str => {
   log.debug('Getting Activity Type...')
-  // TODO: Process on found activity to:
-  // strip funny characters
   const activityType = /\|(?:\s*)(\S+)(?:\s*):/.exec(str)
   log.debug({ activityType }, 'ACTIVITY TYPE RESULT')
   return activityType[1].toLowerCase()
@@ -125,8 +121,6 @@ const getActivityType = str => {
 
 const getActivity = (type, str) => {
   log.debug('Getting Activity...')
-  // TODO: Process on found activity to:
-  // strip funny characters
   const activity = (new RegExp(`${type}:(?:\\s*)(.*?)(?:\\s*)(?:\\||$)`, 'i')).exec(str)
   log.debug({ activity }, 'ACTIVITY RESULT')
   return activity[1].toLowerCase()
@@ -134,7 +128,6 @@ const getActivity = (type, str) => {
 
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
-  // eslint-disable-next-line prefer-destructuring
   const parsedCommand = /^!(\S*)/.exec(message)
   const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
   if ((to[0] === '#' || to === ircConfig.name) && command) {
@@ -156,40 +149,54 @@ const linkOnDemand = (from, to) => {
 }
 
 const parseOptions = str => {
-  // g: game
+  // g: activity
   // t: type
   // s: streamer
-  const g = /g:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
-  const t = /t:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
-  const s = /s:(?:\s*)([\w\d\s]*?)(?:[\W]*)(?:(?:[gts]:)|$)/i.exec(str)
+  // e: exclusion (from activity)
+  const g = /g:(?:\s*)([\w\d\s&%$#@!*()_,+=[\]{}'"./\\-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
+  const t = /t:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
+  const s = /s:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
+  const e = /e:(?:\s*)([\w\d\s&%$#@!*()_,+=[\]{}'"./\\-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
+  const i = /played:?(?:\s*)-(\d+)/.exec(str)
   const res = {
     g: g ? g[1] : null,
     t: t ? t[1] : null,
     s: s ? s[1] : null,
+    e: e ? e[1].split(/(?:\s*)(?:([\w\d\s&%$#@!*()_-]*),?)/).filter(x => x !== '') : null,
+    i: i ? i[1] : null,
   }
   log.debug(res, 'OPTIONS RESULTS')
   return res
 }
 
-const playedConstructor = message => {
-  const options = parseOptions(message)
-
-  return db.select()
+const playedConstructor = options => {
+  const query = db.select()
     .from('sessions_view')
     .where(builder => {
       if (options.g) builder.andWhere('activity', 'LIKE', `%${options.g}%`)
+      if (options.e) builder.andWhere(builder => {
+        options.e.forEach(exclusion => {
+          builder.andWhere('activity', 'NOT LIKE', `%${exclusion}%`)
+        })
+      })
       if (options.t) builder.andWhere('activity_type', 'LIKE', `%${options.t}%`)
       if (options.s) builder.andWhere(builder => {
         const aliases = streamerAliases.find(x => x.some(y => y.toLowerCase() === options.s))
-        if (aliases) aliases.forEach(alias => builder.orWhere('streamer', 'LIKE', `%${alias}%`))
-        else builder.andWhere('streamer', 'LIKE', `%${options.s}%`)
+        if (aliases) aliases.forEach(alias => builder.orWhere('streamer', 'RLIKE', `[[:<:]]${alias}[[:>:]]`))
+        else builder.andWhere('streamer', 'RLIKE', `[[:<:]]${options.s}[[:>:]]`)
       })
     })
+
+  log.debug({ query: query.toString() }, 'CONSTRUCTED QUERY')
+
+  return query
 }
 
 const lastPlayed = (from, to, message) => {
-  playedConstructor(message)
-    .limit(1)
+  const options = parseOptions(message)
+
+  playedConstructor(options)
+    .limit(options.i + 1 || 1)
     .then(res => {
       if (!res.length) {
         client.say(to, `I didn't find any results for "${message}"`)
@@ -199,9 +206,7 @@ const lastPlayed = (from, to, message) => {
       // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
       if (to === '#dopefish_lives') return null
 
-      // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
-      // eslint-disable-next-line prefer-destructuring
-      res = res[0]
+      res = res[Math.min(options.i, res.length - 1) || 0]
 
       // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
       // TODO: This needs to spit out time in a readable fashion
@@ -213,7 +218,9 @@ const lastPlayed = (from, to, message) => {
 }
 
 const firstPlayed = (from, to, message) => {
-  playedConstructor(message)
+  const options = parseOptions(message)
+
+  playedConstructor(options)
     .limit(1)
     .orderBy('session_id', 'ASC')
     .then(res => {
@@ -225,12 +232,7 @@ const firstPlayed = (from, to, message) => {
       // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
       if (to === '#dopefish_lives') return null
 
-      // TODO: FIX THIS ESLINT RULE, we don't need it on arrays
-      // eslint-disable-next-line prefer-destructuring
       res = res[0]
-
-      // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
-      // TODO: This needs to spit out time in a readable fashion
 
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
@@ -245,7 +247,6 @@ const totalPlayed = (from, to, message) => {
   db.raw('call totalSession(?, ?)', [`%${options.g}%`, `%${options.s}%`])
     .then(res => {
       log.debug({ res }, 'RESULTS')
-      // eslint-disable-next-line prefer-destructuring
       const results = res[0][0][0]
       if (results.duration === null) return null
       const output = `${options.g} was played for a total of ${moment.duration(results.duration, 'seconds').humanize()} seconds, first played on ${(new Date(results.start_t)).toISOString()}, last played on ${(new Date(results.end_t)).toISOString()}`
@@ -255,9 +256,28 @@ const totalPlayed = (from, to, message) => {
   return null
 }
 
-// const currentlyPlaying = (from, to, message) => {
-//   return null
-// }
+const currentlyPlaying = (from, to) => {
+  db.select()
+    .from('sessions_view')
+    .limit(1)
+    .then(res => {
+      if (!res.length) {
+        client.say(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`)
+        return null
+      }
+
+      // DEBUG: REMOVE THIS LATER, it's a silencer so the bot can sit in #dopefish_lives and learn
+      if (to === '#dopefish_lives') return null
+
+      res = res[0]
+
+      const duration = moment.duration(moment(res.start_timestamp).diff(moment(), 'milliseconds'), 'milliseconds')
+      const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
+      const output = `${from}: ${response}`
+      client.say(to, output)
+    })
+    .catch(err => log.error(err))
+}
 
 // const playedToday = (from, to, message) => {
 //   return null
@@ -282,7 +302,7 @@ const commands = {
   'last': lastPlayed,
   'firstplayed': firstPlayed,
   'totalplayed': totalPlayed,
-  // 'currentlyplaying': currentlyPlaying,
+  'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
   // 'playedtoday': playedToday,

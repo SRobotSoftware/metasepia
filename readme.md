@@ -15,8 +15,7 @@ A chatbot for the DopefishLives online streaming community.
 ## Design Considerations
 
 ### Ideas
-keyword exclusion in search
-
+???
 
 ### Data
 sessions:
@@ -52,15 +51,10 @@ Commands:
 
 Options:
 * These are valid for lastplayed, firstplayed, and totalplayed
-* g: specific game
-* s: specific streamer
-* t: specific activity
-
-Examples:
-```
-<Skwid> !played g: Dark Souls
-<Metasepia> Skwid, 1d 4h 23m 14s (0y 1d) ago, Skwid played Dark Souls for 2 seconds
-```
+* g: specific activity (e.g. g: dark souls)
+* s: specific streamer (e.g. s: skwid)
+* t: specific activity type (e.g. t: movie)
+* e: excludes from the activity. Comma delimited (e.g. searching for the first dark souls game: e: 2, 3, remastered, i)
 
 ---
 
