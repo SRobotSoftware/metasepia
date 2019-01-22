@@ -135,6 +135,10 @@ const linkOnDemand = (from, to) => {
   send(to, `${from}: http://vacker.tv/ondemand/`)
 }
 
+const linkWebDB = (from, to) => {
+  send(to, `${from}: https://played.vacker.tv/`)
+}
+
 const parseOptions = str => {
   // g: activity
   // t: type
@@ -299,8 +303,40 @@ const commands = {
   'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
+  'web': linkWebDB,
+  'playedweb': linkWebDB,
   // 'today': playedToday,
   // 'playedtoday': playedToday,
+  // my $com_nextplayed = "!nextplayed";
+  // my $com_firstplayedleet = "!f1r57p14y3d";
+  // my $com_randomplayed = "!randomplayed";
+  // my $com_randomplayedleet = "!r4nd0mp14y3d";
+
+  // my $com_lastplayedwisdom = "!lastplayedwisdom";
+  // my $com_lastplayedwisdom2 = "!playedwisdom";
+  // my $com_lastplayedwisdomleet = "!p14y3dw15d0m";
+  // my $com_lastplayedweb = "!lastplayedweb";
+  // my $com_lastplayedweb2 = "!playedweb";
+  // my $com_playedleet = "!pl4y3d";
+  // my $com_playedleet2 = "!p14y3d";
+  // my $com_lastplayedleet = "!l457p14y3d";
+  // my $com_lastplayedleet2 = "!1457p14y3d";
+
+  // my $com_lastplayedhelp = "!lastplayedhelp";
+  // my $com_lastplayedhelp2 = "!playedhelp";
+  // my $com_lastplayedhelp3 = "!man lastplayed";
+
+  // my $com_playedtoday = "!playedtoday";
+  // my $com_playedtoday2 = "!played24h";
+  // my $com_playedtoday3 = "!todayplayed";
+
+  // my $com_playednobody = "!nobodyplayed";
+  // my $com_playedfake = "!p1ayed";
+  // my $com_playedfake2 = "!playedfake";
+  // my $com_playedfake3 = "!notrealplayed";
+  // my $com_playedfake4 = "!prayed";
+  // my $com_playedfake5 = "!pIayed";
+  // my $com_playedfake6 = "!playedruse";
 }
 
 /*
