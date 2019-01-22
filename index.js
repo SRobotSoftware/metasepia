@@ -232,7 +232,7 @@ const totalPlayed = (from, to, message) => {
     .then(res => {
       res = res[0][0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment.utc(res.end_timestamp).subtract('7', 'h')}, was first streamed on ${moment.utc(res.start_timestamp).subtract('7', 'h')}, and has been streamed for a total of ${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (D:H:M:S)`
+      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment.utc(res.end_timestamp).subtract('7', 'h')}, was first streamed on ${moment.utc(res.start_timestamp).subtract('7', 'h')}, and has been streamed for a total of ${leftPad(duration.get('months'))}:${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (Mo:D:H:M:S)`
       send(to, output)
     })
     .catch(err => log.error(err))
