@@ -240,7 +240,7 @@ const currentlyPlaying = (from, to) => {
 
       res = res[0]
 
-      const duration = moment.duration(moment.utc(res.start_timestamp).diff(moment.utc(), 'milliseconds'), 'milliseconds')
+      const duration = moment.duration(moment.utc().diff(moment.utc(res.start_timestamp).subtract(7, 'h'), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
       send(to, output)
