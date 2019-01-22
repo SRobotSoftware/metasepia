@@ -269,7 +269,7 @@ const currentlyPlaying = (from, to, message, opts) => {
 
       res = res[0]
 
-      const duration = moment.duration(moment.utc().diff(moment.utc(res.start_timestamp).subtract(7, 'h'), 'milliseconds'), 'milliseconds')
+      const duration = moment.duration(moment.utc().diff(moment.utc(res.start_timestamp).subtract(7, 'h'), 'milliseconds'), 'milliseconds').subtract('7', 'h')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
       send(to, output, opts)
@@ -352,7 +352,7 @@ const commands = {
   'playedweb': linkWebDB,
 
   // LEGACY
-  'f1r57p14y3d': firstPlayed,
+  'f1r57p14y3d': leetCommand(firstPlayed),
   'pl4y3d': leetCommand(lastPlayed),
   'p14y3d': leetCommand(lastPlayed),
   'l457p14y3d': leetCommand(lastPlayed),
