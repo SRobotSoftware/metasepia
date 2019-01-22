@@ -335,6 +335,8 @@ const commands = {
   'l': lastPlayed,
   'last': lastPlayed,
   'lastplayed': lastPlayed,
+  'p': lastPlayed,
+  'played': lastPlayed,
   'f': firstPlayed,
   'first': firstPlayed,
   'firstplayed': firstPlayed,
