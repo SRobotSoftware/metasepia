@@ -173,7 +173,6 @@ const playedConstructor = options => {
         else builder.andWhere('streamer', 'RLIKE', `[[:<:]]${options.s}[[:>:]]`)
       })
     })
-
   log.debug({ query: query.toString() }, 'CONSTRUCTED QUERY')
 
   return query
@@ -189,11 +188,7 @@ const lastPlayed = (from, to, message) => {
         send(to, `I didn't find any results for "${message}"`)
         return null
       }
-
       res = res[Math.min(options.i, res.length - 1) || 0]
-
-      // `${to} Nobody has been playing anything for ${Math.floor(duration / 1000)}`
-      // TODO: This needs to spit out time in a readable fashion
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
       send(to, output)
@@ -212,9 +207,7 @@ const firstPlayed = (from, to, message) => {
         send(to, `I didn't find any results for "${message}"`)
         return null
       }
-
       res = res[0]
-
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
       send(to, output)
@@ -223,10 +216,29 @@ const firstPlayed = (from, to, message) => {
   return null
 }
 
-// const totalPlayed = (from, to, message) => {
-//   const options = parseOptions(message)
-//   return null
-// }
+const totalPlayed = (from, to, message) => {
+  const options = parseOptions(message)
+  const searchQuery = playedConstructor(options)
+
+  db
+    .raw('SET SQL_MODE=\'ALLOW_INVALID_DATES\'')
+    .then(() => db.raw('drop temporary table if exists totalgames'))
+    .then(() => db.raw(searchQuery.toString()).wrap('create temporary table totalgames(primary key(session_id))'))
+    .then(() => db.raw('select start_timestamp into @st from totalgames order by session_id asc limit 1'))
+    .then(() => db.raw('select end_timestamp into @en from totalgames order by session_id desc limit 1'))
+    .then(() => db.raw('select streamer into @str from totalgames order by session_id desc limit 1'))
+    .then(() => db.raw('select sum(duration_in_seconds) into @dur from totalgames'))
+    .then(() => db.raw('select @st as start_timestamp, @en as end_timestamp, @str as streamer, @dur as duration_in_seconds'))
+    .then(res => {
+      res = res[0][0]
+      const duration = moment.duration(res.duration_in_seconds, 'seconds')
+      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment.utc(res.end_timestamp).subtract('7', 'h')}, was first streamed on ${moment.utc(res.start_timestamp).subtract('7', 'h')}, and has been streamed for a total of ${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (D:H:M:S)`
+      send(to, output)
+    })
+    .catch(err => log.error(err))
+
+  return null
+}
 
 const currentlyPlaying = (from, to) => {
   db.select()
@@ -273,14 +285,21 @@ const shutdown = (code = 0, reason = '') => {
 const commands = {
   'p': lastPlayed,
   'played': lastPlayed,
-  'lastplayed': lastPlayed,
+  'l': lastPlayed,
   'last': lastPlayed,
+  'lastplayed': lastPlayed,
+  'f': firstPlayed,
+  'first': firstPlayed,
   'firstplayed': firstPlayed,
-  // 'totalplayed': totalPlayed,
+  't': totalPlayed,
+  'total': totalPlayed,
+  'totalplayed': totalPlayed,
+  'c': currentlyPlaying,
   'current': currentlyPlaying,
   'currentlyplaying': currentlyPlaying,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
+  // 'today': playedToday,
   // 'playedtoday': playedToday,
 }
 
