@@ -116,27 +116,40 @@ const getActivity = (type, str) => {
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
   const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(message)
-  const command = parsedCommand ? parsedCommand[1].toLowerCase() : ''
+  let command = parsedCommand ? parsedCommand[1] : ''
   if ((to[0] === '#' || to === ircConfig.name) && command) {
     if (to === ircConfig.name) to = from
+
+    const opts = {
+      leet: /leet/i.test(command),
+      yell: command.replace(/[a-z]/g, '') === command,
+      notice: false,
+    }
+    command = command
+      .replace(/leet/i, '')
+      .toLowerCase()
+
     if (commands.hasOwnProperty(command)) {
       log.debug({ command }, `Command parsed: ${command}`)
-      commands[command](from, to, message)
+      commands[command](from, to, message, opts)
     } else
       log.debug({ command }, `Unrecognized Command given: ${command}`)
   }
 }
 
-const linkDiscord = (from, to) => {
-  send(to, `${from}: https://discord.gg/R7cazz8`)
+const linkDiscord = (from, to, message, opts) => {
+  delete opts.leet
+  send(to, `${from}: https://discord.gg/R7cazz8`, opts)
 }
 
-const linkOnDemand = (from, to) => {
-  send(to, `${from}: http://vacker.tv/ondemand/`)
+const linkOnDemand = (from, to, message, opts) => {
+  delete opts.leet
+  send(to, `${from}: http://vacker.tv/ondemand/`, opts)
 }
 
-const linkWebDB = (from, to) => {
-  send(to, `${from}: https://played.vacker.tv/`)
+const linkWebDB = (from, to, message, opts) => {
+  delete opts.leet
+  send(to, `${from}: https://played.vacker.tv/`, opts)
 }
 
 const parseOptions = str => {
@@ -182,7 +195,7 @@ const playedConstructor = options => {
   return query
 }
 
-const lastPlayed = (from, to, message) => {
+const lastPlayed = (from, to, message, opts) => {
   const options = parseOptions(message)
 
   playedConstructor(options)
@@ -195,12 +208,12 @@ const lastPlayed = (from, to, message) => {
       res = res[Math.min(options.i, res.length - 1) || 0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
-      send(to, output)
+      send(to, output, opts)
     })
     .catch(err => log.error(err))
 }
 
-const firstPlayed = (from, to, message) => {
+const firstPlayed = (from, to, message, opts) => {
   const options = parseOptions(message)
 
   playedConstructor(options)
@@ -208,19 +221,19 @@ const firstPlayed = (from, to, message) => {
     .orderBy('session_id', 'ASC')
     .then(res => {
       if (!res.length) {
-        send(to, `I didn't find any results for "${message}"`)
+        send(to, `I didn't find any results for "${message}"`, opts)
         return null
       }
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
-      send(to, output)
+      send(to, output, opts)
     })
     .catch(err => log.error(err))
   return null
 }
 
-const totalPlayed = (from, to, message) => {
+const totalPlayed = (from, to, message, opts) => {
   const options = parseOptions(message)
   const searchQuery = playedConstructor(options)
 
@@ -237,20 +250,20 @@ const totalPlayed = (from, to, message) => {
       res = res[0][0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment.utc(res.end_timestamp).subtract('7', 'h')}, was first streamed on ${moment.utc(res.start_timestamp).subtract('7', 'h')}, and has been streamed for a total of ${leftPad(duration.get('months'))}:${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (Mo:D:H:M:S)`
-      send(to, output)
+      send(to, output, opts)
     })
     .catch(err => log.error(err))
 
   return null
 }
 
-const currentlyPlaying = (from, to) => {
+const currentlyPlaying = (from, to, message, opts) => {
   db.select()
     .from('sessions_view')
     .limit(1)
     .then(res => {
       if (!res.length) {
-        send(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`)
+        send(to, `Sorry ${from}, it looks to me like nobody's ever streamed.`, opts)
         return null
       }
 
@@ -259,14 +272,46 @@ const currentlyPlaying = (from, to) => {
       const duration = moment.duration(moment.utc().diff(moment.utc(res.start_timestamp).subtract(7, 'h'), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
-      send(to, output)
+      send(to, output, opts)
     })
     .catch(err => log.error(err))
 }
 
-const send = (to, message, notice) => {
-  if (notice) return client.notice(to, message)
+const hasNotNull = (obj, prop) => {
+  return obj.hasOwnProperty(prop) && obj[prop]
+}
+
+const leet = str => str
+  .replace(/a/ig, '4')
+  .replace(/b/g, '6')
+  .replace(/e/ig, '3')
+  .replace(/g/g, '9')
+  .replace(/[iIl]/g, '1')
+  .replace(/o/ig, '0')
+  .replace(/s/ig, '5')
+  .replace(/t/ig, '7')
+  .replace(/z/ig, '2')
+
+// For legacy commands
+const leetCommand = func => (from, to, message) => func(from, to, message, { leet: true })
+
+
+const yell = str => str.toUpperCase()
+
+const send = (to, message, opts) => {
+  // Valid options:
+  // {
+  //   notice: false,
+  //   leet: false,
+  //   yell: false,
+  // }
+  if (hasNotNull(opts, 'notice')) return client.notice(to, message)
   if (silentChannels.some(channel => channel === to)) return null
+
+  // Fun things!
+  if (hasNotNull(opts, 'leet')) message = leet(message)
+  if (hasNotNull(opts, 'yell')) message = yell(message)
+
   client.say(to, message)
 }
 
@@ -287,8 +332,6 @@ const shutdown = (code = 0, reason = '') => {
 
 // Command mapping
 const commands = {
-  'p': lastPlayed,
-  'played': lastPlayed,
   'l': lastPlayed,
   'last': lastPlayed,
   'lastplayed': lastPlayed,
@@ -305,38 +348,40 @@ const commands = {
   'ondemand': linkOnDemand,
   'web': linkWebDB,
   'playedweb': linkWebDB,
+
+  // LEGACY
+  'f1r57p14y3d': firstPlayed,
+  'pl4y3d': leetCommand(lastPlayed),
+  'p14y3d': leetCommand(lastPlayed),
+  'l457p14y3d': leetCommand(lastPlayed),
+  '1457p14y3d': leetCommand(lastPlayed),
+  // 'played24h': playedToday,
+  // 'todayplayed': playedToday,
+  // 'r4nd0mp14y3d': leetCommand(randomPlayed),
+  // 'notrealplayed': fakePlayed,
+  // 'prayed': fakePlayed,
+  // 'piayed': fakePlayed,
+  // 'playedruse': fakePlayed,
+
+  // Unemplemented
   // 'today': playedToday,
   // 'playedtoday': playedToday,
-  // my $com_nextplayed = "!nextplayed";
-  // my $com_firstplayedleet = "!f1r57p14y3d";
-  // my $com_randomplayed = "!randomplayed";
-  // my $com_randomplayedleet = "!r4nd0mp14y3d";
+  // 'nextplayed': nextPlayed,
+  // 'randomplayed': randomPlayed,
+  // 'fake': fakePlayed,
+  // 'p1ayed': fakePlayed,
+  // 'playedfake': fakePlayed,
+  //  Nobody
+  // 'nobody': nobodyPlayed,
+  // 'nobodyplayed': nobodyPlayed,
 
+  // WISDOM opt
+  // "flying and shooting lasers and shit"
+  // Not actually sure what this one does?
+  // But add it as a modifier with the same setup as leet
+  // my $com_lastplayedwisdomleet = "!p14y3dw15d0m";
   // my $com_lastplayedwisdom = "!lastplayedwisdom";
   // my $com_lastplayedwisdom2 = "!playedwisdom";
-  // my $com_lastplayedwisdomleet = "!p14y3dw15d0m";
-  // my $com_lastplayedweb = "!lastplayedweb";
-  // my $com_lastplayedweb2 = "!playedweb";
-  // my $com_playedleet = "!pl4y3d";
-  // my $com_playedleet2 = "!p14y3d";
-  // my $com_lastplayedleet = "!l457p14y3d";
-  // my $com_lastplayedleet2 = "!1457p14y3d";
-
-  // my $com_lastplayedhelp = "!lastplayedhelp";
-  // my $com_lastplayedhelp2 = "!playedhelp";
-  // my $com_lastplayedhelp3 = "!man lastplayed";
-
-  // my $com_playedtoday = "!playedtoday";
-  // my $com_playedtoday2 = "!played24h";
-  // my $com_playedtoday3 = "!todayplayed";
-
-  // my $com_playednobody = "!nobodyplayed";
-  // my $com_playedfake = "!p1ayed";
-  // my $com_playedfake2 = "!playedfake";
-  // my $com_playedfake3 = "!notrealplayed";
-  // my $com_playedfake4 = "!prayed";
-  // my $com_playedfake5 = "!pIayed";
-  // my $com_playedfake6 = "!playedruse";
 }
 
 /*
