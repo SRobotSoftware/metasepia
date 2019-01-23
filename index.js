@@ -6,7 +6,7 @@ const Irc = require('irc')
 const Pino = require('pino')
 const config = require('config')
 const knex = require('knex')
-const moment = require('moment')
+const moment = require('moment-timezone')
 
 /*
 **  Config
@@ -29,6 +29,7 @@ const {
 const log = Pino(pinoConfig)
 const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
 const db = knex(dbConfig)
+moment.tz.setDefault('Etc/GMT')
 
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
@@ -38,7 +39,7 @@ let forceKill = false
 */
 
 const leftPad = (str, amount = 2) => {
-  str = str + ''
+  str += ''
   const out = [...str]
   while (out.length < amount) {
     out.unshift(0)
@@ -207,7 +208,7 @@ const lastPlayed = (from, to, message, opts) => {
       }
       res = res[Math.min(options.i, res.length - 1) || 0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -226,7 +227,7 @@ const firstPlayed = (from, to, message, opts) => {
       }
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment.utc(res.end_timestamp).subtract(7, 'h').fromNow()}`
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -249,7 +250,7 @@ const totalPlayed = (from, to, message, opts) => {
     .then(res => {
       res = res[0][0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment.utc(res.end_timestamp).subtract('7', 'h')}, was first streamed on ${moment.utc(res.start_timestamp).subtract('7', 'h')}, and has been streamed for a total of ${leftPad(duration.get('months'))}:${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (Mo:D:H:M:S)`
+      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment(res.end_timestamp)}, was first streamed on ${moment(res.start_timestamp)}, and has been streamed for a total of ${leftPad(duration.get('months'))}:${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (Mo:D:H:M:S)`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -269,7 +270,7 @@ const currentlyPlaying = (from, to, message, opts) => {
 
       res = res[0]
 
-      const duration = moment.duration(moment.utc().diff(moment.utc(res.start_timestamp).subtract(7, 'h'), 'milliseconds'), 'milliseconds').subtract('7', 'h')
+      const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
       send(to, output, opts)
@@ -294,7 +295,6 @@ const leet = str => str
 
 // For legacy commands
 const leetCommand = func => (from, to, message) => func(from, to, message, { leet: true })
-
 
 const yell = str => str.toUpperCase()
 
