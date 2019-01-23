@@ -201,6 +201,7 @@ const lastPlayed = (from, to, message, opts) => {
 
   playedConstructor(options)
     .limit(options.i + 1 || 1)
+    .whereNotNull('end_timestamp')
     .then(res => {
       if (!res.length) {
         send(to, `I didn't find any results for "${message}"`)
@@ -219,6 +220,7 @@ const firstPlayed = (from, to, message, opts) => {
 
   playedConstructor(options)
     .limit(1)
+    .whereNotNull('end_timestamp')
     .orderBy('session_id', 'ASC')
     .then(res => {
       if (!res.length) {
@@ -270,7 +272,7 @@ const currentlyPlaying = (from, to, message, opts) => {
 
       res = res[0]
 
-      const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
+      const duration = moment.duration(moment(res.start_timestamp).diff(moment(), 'milliseconds'), 'milliseconds')
       const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
       const output = `${from}: ${response}`
       send(to, output, opts)
