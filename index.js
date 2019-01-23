@@ -196,6 +196,10 @@ const playedConstructor = options => {
   return query
 }
 
+const parseTimeHours = duration => {
+  return `${leftPad(duration.get('hours'))}h ${leftPad(duration.get('minutes'))}m ${leftPad(duration.get('seconds'))}s`
+}
+
 const lastPlayed = (from, to, message, opts) => {
   const options = parseOptions(message)
 
@@ -209,7 +213,7 @@ const lastPlayed = (from, to, message, opts) => {
       }
       res = res[Math.min(options.i, res.length - 1) || 0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}, about ${moment(res.end_timestamp).fromNow()}`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -229,7 +233,7 @@ const firstPlayed = (from, to, message, opts) => {
       }
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}, about ${moment(res.end_timestamp).fromNow()}`
+      const output = `${from}: ${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}, about ${moment(res.end_timestamp).fromNow()}`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -273,8 +277,25 @@ const currentlyPlaying = (from, to, message, opts) => {
       res = res[0]
 
       const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
-      const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))}`
+      const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}`
       const output = `${from}: ${response}`
+      send(to, output, opts)
+    })
+    .catch(err => log.error(err))
+}
+
+const playedToday = (from, to, message, opts) => {
+  db.select()
+    .from('sessions_view')
+    .where('start_timestamp', '>', moment().subtract('24', 'hours').format('Y-MM-DD kk:mm:ss'))
+    .then(res => {
+      if (!res.length) {
+        send(to, `Sorry ${from}, it looks like nobody's streamed in the last 24 hours.`, opts)
+        return null
+      }
+      const streamers = res.map(x => x.streamer).join(', ')
+      const duration = moment.duration(res.reduce((p, c) => p += c.duration_in_seconds, 0), 'seconds')
+      const output = `${from}: found ${res.length} streams (${streamers}), totalling ${parseTimeHours(duration)}.`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -317,10 +338,6 @@ const send = (to, message, opts) => {
   client.say(to, message)
 }
 
-// const playedToday = (from, to, message) => {
-//   return null
-// }
-
 const shutdown = (code = 0, reason = '') => {
   if (forceKill) {
     log.error('!!! FORCING SHUTDOWN !!!')
@@ -352,6 +369,8 @@ const commands = {
   'ondemand': linkOnDemand,
   'web': linkWebDB,
   'playedweb': linkWebDB,
+  'today': playedToday,
+  'playedtoday': playedToday,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
@@ -359,8 +378,8 @@ const commands = {
   'p14y3d': leetCommand(lastPlayed),
   'l457p14y3d': leetCommand(lastPlayed),
   '1457p14y3d': leetCommand(lastPlayed),
-  // 'played24h': playedToday,
-  // 'todayplayed': playedToday,
+  'played24h': playedToday,
+  'todayplayed': playedToday,
   // 'r4nd0mp14y3d': leetCommand(randomPlayed),
   // 'notrealplayed': fakePlayed,
   // 'prayed': fakePlayed,
@@ -368,8 +387,6 @@ const commands = {
   // 'playedruse': fakePlayed,
 
   // Unemplemented
-  // 'today': playedToday,
-  // 'playedtoday': playedToday,
   // 'nextplayed': nextPlayed,
   // 'randomplayed': randomPlayed,
   // 'fake': fakePlayed,
