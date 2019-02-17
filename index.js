@@ -7,6 +7,7 @@ const Pino = require('pino')
 const config = require('config')
 const knex = require('knex')
 const moment = require('moment-timezone')
+const Chance = require('chance')
 
 /*
 **  Config
@@ -20,6 +21,7 @@ const {
   topicTrackingChannels,
   silentChannels,
   commandPrefix,
+  longbowAdvice,
 } = config.get('meta')
 
 /*
@@ -30,6 +32,7 @@ const log = Pino(pinoConfig)
 const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config)
 const db = knex(dbConfig)
 moment.tz.setDefault('Etc/GMT')
+const chance = new Chance()
 
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
@@ -45,6 +48,10 @@ const leftPad = (str, amount = 2) => {
     out.unshift(0)
   }
   return out.join('')
+}
+
+const hasNotNull = (obj, prop) => {
+  return obj && typeof obj === 'object' && obj.hasOwnProperty(prop) && obj[prop]
 }
 
 const parseTopic = (channel, topic, nick, message) => {
@@ -153,6 +160,11 @@ const linkWebDB = (from, to, message, opts) => {
   send(to, `${from}: https://played.vacker.tv/`, opts)
 }
 
+const linkYT = (from, to, message, opts) => {
+  delete opts.leet
+  send(to, `${from}: https://www.youtube.com/user/Dopelives`, opts)
+}
+
 const parseOptions = str => {
   // g: activity
   // t: type
@@ -255,8 +267,22 @@ const totalPlayed = (from, to, message, opts) => {
     .then(() => db.raw('select @st as start_timestamp, @en as end_timestamp, @str as streamer, @dur as duration_in_seconds'))
     .then(res => {
       res = res[0][0]
-      const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment(res.end_timestamp)}, was first streamed on ${moment(res.start_timestamp)}, and has been streamed for a total of ${leftPad(duration.get('months'))}:${leftPad(duration.get('days'))}:${leftPad(duration.get('hours'))}:${leftPad(duration.get('minutes'))}:${leftPad(duration.get('seconds'))} (Mo:D:H:M:S)`
+      const totalDuration = moment.duration(res.duration_in_seconds, 'seconds')
+      const durationDays = Math.floor(totalDuration.asDays())
+      totalDuration.subtract(durationDays, 'days')
+      const durationHours = Math.floor(totalDuration.asHours())
+      totalDuration.subtract(durationHours, 'hours')
+      const durationMinutes = Math.floor(totalDuration.asMinutes())
+      totalDuration.subtract(durationMinutes, 'minutes')
+      const durationSeconds = Math.floor(totalDuration.asSeconds())
+      const durationText = [durationDays, durationHours, durationMinutes, durationSeconds].reduce((p, c, i) => {
+        if (i === 0 && c > 0) p += `${c} days `
+        else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hours `
+        else if (i === 2) p += `${c} minutes and `
+        else if (i === 3) p += `${c} seconds `
+        return p
+      }, '')
+      const output = `${from}: ${options.g} was last streamed by ${res.streamer} on ${moment(res.end_timestamp)}, was first streamed on ${moment(res.start_timestamp)}, and has been streamed for a total of ${durationText}.`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -301,8 +327,9 @@ const playedToday = (from, to, message, opts) => {
     .catch(err => log.error(err))
 }
 
-const hasNotNull = (obj, prop) => {
-  return obj.hasOwnProperty(prop) && obj[prop]
+const larryHelp = (from, to, message, opts) => {
+  const advice = chance.pickone(longbowAdvice)
+  send(to, `${from}: ${advice}`, opts)
 }
 
 const leet = str => str
@@ -365,12 +392,23 @@ const commands = {
   'c': currentlyPlaying,
   'current': currentlyPlaying,
   'currentlyplaying': currentlyPlaying,
+  'disco': linkDiscord,
   'discord': linkDiscord,
   'ondemand': linkOnDemand,
+  'vod': linkOnDemand,
+  'db': linkWebDB,
   'web': linkWebDB,
   'playedweb': linkWebDB,
+  'yt': linkYT,
+  'youtube': linkYT,
   'today': playedToday,
   'playedtoday': playedToday,
+
+  // Larry
+  'larry': larryHelp,
+  'larrylongbow': larryHelp,
+  'longbow': larryHelp,
+  'wwld': larryHelp,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
