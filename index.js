@@ -41,15 +41,6 @@ let forceKill = false
 **  Functions
 */
 
-const leftPad = (str, amount = 2) => {
-  str += ''
-  const out = [...str]
-  while (out.length < amount) {
-    out.unshift(0)
-  }
-  return out.join('')
-}
-
 const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')
 
 const hasNotNull = (obj, prop) => {
@@ -57,6 +48,7 @@ const hasNotNull = (obj, prop) => {
 }
 
 const mangleNick = nick => {
+  let mangled = false
   const mangleMap = {
     'a': '\u00E0',
     'c': '\u00E7',
@@ -76,7 +68,7 @@ const mangleNick = nick => {
     'U': '\u00D9',
     'Y': '\u00DD',
   }
-  let mangled = false
+
   return nick
     .split('')
     .map(char => {
@@ -97,15 +89,18 @@ const findAndMangleNicks = str => {
     .map(x => escapeRegex(x))
     .join('|')
   const search = new RegExp(`\\b(?:${aliases})\\b`, 'gi')
-  let res = search.exec(str)
   const matches = []
+  let res = search.exec(str)
+
   while (res) {
     matches.push(res[0])
     res = search.exec(str)
   }
+
   matches.forEach(nick => {
     str = str.replace(new RegExp(`\\b${nick}\\b`), mangleNick(nick))
   })
+
   return str
 }
 
@@ -200,25 +195,15 @@ const parseMessage = (from, to, message) => {
   }
 }
 
-const linkDiscord = (from, to, message, opts) => {
+const linkFunc = link => (from, to, message, opts) => {
   delete opts.leet
-  send(to, `${from}: https://discord.gg/R7cazz8`, opts)
+  send(to, `${from}: ${link}`, opts)
 }
 
-const linkOnDemand = (from, to, message, opts) => {
-  delete opts.leet
-  send(to, `${from}: http://vacker.tv/ondemand/`, opts)
-}
-
-const linkWebDB = (from, to, message, opts) => {
-  delete opts.leet
-  send(to, `${from}: https://played.vacker.tv/`, opts)
-}
-
-const linkYT = (from, to, message, opts) => {
-  delete opts.leet
-  send(to, `${from}: https://www.youtube.com/user/Dopelives`, opts)
-}
+const linkDiscord = linkFunc('https://discord.gg/R7cazz8')
+const linkOnDemand = linkFunc('http://vacker.tv/ondemand/')
+const linkWebDB = linkFunc('https://played.vacker.tv/')
+const linkYT = linkFunc('https://www.youtube.com/user/Dopelives')
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
@@ -230,6 +215,7 @@ const parseOptions = str => {
   // t: type
   // s: streamer
   // e: exclusion (from activity)
+  // i: how many entries back (only used in lastPlayed)
   const g = /g:(?:\s*)([\w\d\s&%$#@!*()_,+=[\]{}'"./\\-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
   const t = /t:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
   const s = /s:(?:\s*)([\w\d\s-]*?)(?:[\W]*)(?:(?:[gtse]:)|$)/i.exec(str)
@@ -268,8 +254,22 @@ const playedConstructor = options => {
   return query
 }
 
-const parseTimeHours = duration => {
-  return `${leftPad(duration.get('hours'))}h ${leftPad(duration.get('minutes'))}m ${leftPad(duration.get('seconds'))}s`
+const parseTime = duration => {
+  const durationDays = Math.floor(duration.asDays())
+  duration.subtract(durationDays, 'days')
+  const durationHours = Math.floor(duration.asHours())
+  duration.subtract(durationHours, 'hours')
+  const durationMinutes = Math.floor(duration.asMinutes())
+  duration.subtract(durationMinutes, 'minutes')
+  const durationSeconds = Math.floor(duration.asSeconds())
+
+  return [durationDays, durationHours, durationMinutes, durationSeconds].reduce((p, c, i) => {
+    if (i === 0 && c > 0) p += `${c} days `
+    else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hours `
+    else if (i === 2) p += `${c} minutes and `
+    else if (i === 3) p += `${c} seconds `
+    return p
+  }, '')
 }
 
 const lastPlayed = (from, to, message, opts) => {
@@ -285,7 +285,7 @@ const lastPlayed = (from, to, message, opts) => {
       }
       res = res[Math.min(options.i, res.length - 1) || 0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const preOutput = `${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}, about ${moment(res.end_timestamp).fromNow()}`
+      const preOutput = `${res.streamer} streamed the ${res.activity_type} ${res.activity} for ${parseTime(duration)}, about ${moment(res.end_timestamp).fromNow()}`
       const output = `${from}: ${findAndMangleNicks(preOutput)}`
       send(to, output, opts)
     })
@@ -306,7 +306,7 @@ const firstPlayed = (from, to, message, opts) => {
       }
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const preOutput = `${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}, about ${moment(res.end_timestamp).fromNow()}`
+      const preOutput = `${res.streamer} first streamed the ${res.activity_type} ${res.activity} for ${parseTime(duration)}, about ${moment(res.end_timestamp).fromNow()}`
       const output = `${from}: ${findAndMangleNicks(preOutput)}`
       send(to, output, opts)
     })
@@ -329,21 +329,7 @@ const totalPlayed = (from, to, message, opts) => {
     .then(() => db.raw('select @st as start_timestamp, @en as end_timestamp, @str as streamer, @dur as duration_in_seconds'))
     .then(res => {
       res = res[0][0]
-      const totalDuration = moment.duration(res.duration_in_seconds, 'seconds')
-      const durationDays = Math.floor(totalDuration.asDays())
-      totalDuration.subtract(durationDays, 'days')
-      const durationHours = Math.floor(totalDuration.asHours())
-      totalDuration.subtract(durationHours, 'hours')
-      const durationMinutes = Math.floor(totalDuration.asMinutes())
-      totalDuration.subtract(durationMinutes, 'minutes')
-      const durationSeconds = Math.floor(totalDuration.asSeconds())
-      const durationText = [durationDays, durationHours, durationMinutes, durationSeconds].reduce((p, c, i) => {
-        if (i === 0 && c > 0) p += `${c} days `
-        else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hours `
-        else if (i === 2) p += `${c} minutes and `
-        else if (i === 3) p += `${c} seconds `
-        return p
-      }, '')
+      const durationText = parseTime(moment.duration(res.duration_in_seconds, 'seconds'))
       const preOutput = `${options.g} was last streamed by ${res.streamer} on ${moment(res.end_timestamp)}, was first streamed on ${moment(res.start_timestamp)}, and has been streamed for a total of ${durationText}.`
       const output = `${from}: ${findAndMangleNicks(preOutput)}`
       send(to, output, opts)
@@ -366,7 +352,7 @@ const currentlyPlaying = (from, to, message, opts) => {
       res = res[0]
 
       const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
-      const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${parseTimeHours(duration)}`
+      const response = (res.end_timestamp) ? 'Nobody is currently streaming.' : `${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${parseTime(duration)}`
       const output = `${from}: ${findAndMangleNicks(response)}`
       send(to, output, opts)
     })
@@ -384,7 +370,7 @@ const playedToday = (from, to, message, opts) => {
       }
       const streamers = res.map(x => x.streamer).join(', ')
       const duration = moment.duration(res.reduce((p, c) => p += c.duration_in_seconds, 0), 'seconds')
-      const preOutput = `found ${res.length} streams (${streamers}), totalling ${parseTimeHours(duration)}.`
+      const preOutput = `found ${res.length} streams (${streamers}), totalling ${parseTime(duration)}.`
       const output = `${from}: ${findAndMangleNicks(preOutput)}`
       send(to, output, opts)
     })
