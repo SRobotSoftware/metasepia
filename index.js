@@ -222,7 +222,7 @@ const linkYT = (from, to, message, opts) => {
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
-  send(to, `Larry would probably say: \u001D_${findAndMangleNicks(advice)}_`, opts)
+  send(to, `\u001D_${findAndMangleNicks(advice)}_`, opts)
 }
 
 const parseOptions = str => {
