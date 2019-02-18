@@ -260,14 +260,11 @@ const parseTime = duration => {
   const durationHours = Math.floor(duration.asHours())
   duration.subtract(durationHours, 'hours')
   const durationMinutes = Math.floor(duration.asMinutes())
-  duration.subtract(durationMinutes, 'minutes')
-  const durationSeconds = Math.floor(duration.asSeconds())
 
-  return [durationDays, durationHours, durationMinutes, durationSeconds].reduce((p, c, i) => {
-    if (i === 0 && c > 0) p += `${c} days `
-    else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hours `
-    else if (i === 2) p += `${c} minutes and `
-    else if (i === 3) p += `${c} seconds `
+  return [durationDays, durationHours, durationMinutes].reduce((p, c, i) => {
+    if (i === 0 && c > 0) p += `${c} day(s) `
+    else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hour(s) and `
+    else if (i === 2) p += `${c} minute(s)`
     return p
   }, '')
 }
@@ -330,8 +327,7 @@ const totalPlayed = (from, to, message, opts) => {
     .then(res => {
       res = res[0][0]
       const durationText = parseTime(moment.duration(res.duration_in_seconds, 'seconds'))
-      const preOutput = `${options.g} was last streamed by ${res.streamer} on ${moment(res.end_timestamp)}, was first streamed on ${moment(res.start_timestamp)}, and has been streamed for a total of ${durationText}.`
-      const output = `${from}: ${findAndMangleNicks(preOutput)}`
+      const output = `${from}: ${findAndMangleNicks(options.g)} was last streamed by ${findAndMangleNicks(res.streamer)} ${moment(res.end_timestamp).fromNow()}, was first streamed ${moment(res.start_timestamp).fromNow()}, and has been streamed for a total of ${durationText}.`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -457,6 +453,7 @@ const commands = {
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
+  'p1ayed': leetCommand(lastPlayed),
   'pl4y3d': leetCommand(lastPlayed),
   'p14y3d': leetCommand(lastPlayed),
   'l457p14y3d': leetCommand(lastPlayed),
