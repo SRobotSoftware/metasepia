@@ -56,31 +56,40 @@ const hasNotNull = (obj, prop) => {
   return obj && typeof obj === 'object' && obj.hasOwnProperty(prop) && obj[prop]
 }
 
-const mangleNick = nick => nick
-  .split('')
-  .map(x => {
-    switch (x) {
-      case 'a': return '\u00E0'
-      case 'c': return '\u00E7'
-      case 'e': return '\u00E8'
-      case 'i': return '\u00EC'
-      case 'n': return '\u00F1'
-      case 'o': return '\u00F2'
-      case 'u': return '\u00F9'
-      case 'y': return '\u00FD'
-      case 'A': return '\u00C0'
-      case 'C': return '\u00C7'
-      case 'D': return '\u00D0'
-      case 'E': return '\u00C8'
-      case 'I': return '\u00CC'
-      case 'N': return '\u00D1'
-      case 'O': return '\u00D2'
-      case 'U': return '\u00D9'
-      case 'Y': return '\u00DD'
-      default: return x
-    }
-  })
-  .join('')
+const mangleNick = nick => {
+  const mangleMap = {
+    'a': '\u00E0',
+    'c': '\u00E7',
+    'e': '\u00E8',
+    'i': '\u00EC',
+    'n': '\u00F1',
+    'o': '\u00F2',
+    'u': '\u00F9',
+    'y': '\u00FD',
+    'A': '\u00C0',
+    'C': '\u00C7',
+    'D': '\u00D0',
+    'E': '\u00C8',
+    'I': '\u00CC',
+    'N': '\u00D1',
+    'O': '\u00D2',
+    'U': '\u00D9',
+    'Y': '\u00DD',
+  }
+  let mangled = false
+  return nick
+    .split('')
+    .map(char => {
+      if (mangled) return char
+      const mangleKey = Object.keys(mangleMap).find(key => char === key)
+      if (mangleKey) {
+        mangled = true
+        return mangleMap[mangleKey]
+      }
+      return char
+    })
+    .join('')
+}
 
 const findAndMangleNicks = str => {
   const aliases = streamerAliases
