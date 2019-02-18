@@ -1,0 +1,19 @@
+{
+  "irc": {
+    "name": "Metasepia",
+    "config": {
+      "channels": [
+        "#skwid",
+        "#dopefish_lives"
+      ],
+      "username": "Metasepia",
+      "realName": "Metasepia Pfefferi"
+    }
+  },
+  "meta": {
+    "topicTrackingChannels": [
+      "#dopefish_lives"
+    ],
+    "silentChannels": []
+  }
+}
