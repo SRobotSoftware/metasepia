@@ -1,4 +1,7 @@
 {
+  "pinoConfig": {
+    "level": "info"
+  },
   "irc": {
     "name": "Metasepia",
     "config": {
