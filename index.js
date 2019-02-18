@@ -327,7 +327,7 @@ const totalPlayed = (from, to, message, opts) => {
     .then(res => {
       res = res[0][0]
       const durationText = parseTime(moment.duration(res.duration_in_seconds, 'seconds'))
-      const output = `${from}: ${findAndMangleNicks(options.g)} was last streamed by ${findAndMangleNicks(res.streamer)} ${moment(res.end_timestamp).fromNow()}, was first streamed ${moment(res.start_timestamp).fromNow()}, and has been streamed for a total of ${durationText}.`
+      const output = `${from}: ${findAndMangleNicks(options.g || 'something')} was last streamed by ${findAndMangleNicks(res.streamer)} ${moment(res.end_timestamp).fromNow()}, was first streamed ${moment(res.start_timestamp).fromNow()}, and has been streamed for a total of ${durationText}.`
       send(to, output, opts)
     })
     .catch(err => log.error(err))
@@ -387,7 +387,7 @@ const leet = str => str
 // For legacy commands
 const leetCommand = func => (from, to, message) => func(from, to, message, { leet: true })
 
-const yell = str => str.toUpperCase()
+const yell = str => `**${str.toUpperCase()}**`
 
 const send = (to, message, opts) => {
   // Valid options:
