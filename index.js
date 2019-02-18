@@ -95,7 +95,7 @@ const findAndMangleNicks = str => {
     res = search.exec(str)
   }
   matches.forEach(nick => {
-    str = str.replace(nick, mangleNick(nick))
+    str = str.replace(new RegExp(`\\b${nick}\\b`), mangleNick(nick))
   })
   return str
 }
@@ -213,7 +213,7 @@ const linkYT = (from, to, message, opts) => {
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
-  send(to, `Larry would probably say: \u001D${findAndMangleNicks(advice)}`, opts)
+  send(to, `Larry would probably say: \u001D_${findAndMangleNicks(advice)}_`, opts)
 }
 
 const parseOptions = str => {
