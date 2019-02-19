@@ -41,6 +41,13 @@ let forceKill = false
 **  Functions
 */
 
+const fixNick = () => {
+  if (client.nick !== ircConfig.name) {
+    client.send('nick', ircConfig.name)
+    setTimeout(() => fixNick(), 1000 * 60)
+  }
+}
+
 const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')
 
 const hasNotNull = (obj, prop) => {
@@ -387,7 +394,7 @@ const leet = str => str
 // For legacy commands
 const leetCommand = func => (from, to, message) => func(from, to, message, { leet: true })
 
-const yell = str => `**${str.toUpperCase()}**`
+const yell = str => `**\u0002${str.toUpperCase()}**`
 
 const send = (to, message, opts) => {
   // Valid options:
@@ -505,6 +512,7 @@ db.raw('call countUnmappedActivities()')
   .then(res => {
     log.warn(res[0][0][0])
     client.connect()
+    fixNick()
   })
   .catch(err => {
     log.error(err)
