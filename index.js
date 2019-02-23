@@ -211,6 +211,7 @@ const linkDiscord = linkFunc('https://discord.gg/R7cazz8')
 const linkOnDemand = linkFunc('http://vacker.tv/ondemand/')
 const linkWebDB = linkFunc('https://played.vacker.tv/')
 const linkYT = linkFunc('https://www.youtube.com/user/Dopelives')
+const linkBingo = linkFunc('Get your BINGO card and play along at: https://skabingo.neocities.org/')
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
@@ -457,6 +458,10 @@ const commands = {
   'larrylongbow': larryHelp,
   'longbow': larryHelp,
   'wwld': larryHelp,
+
+  // Ska bingo
+  'bingo': linkBingo,
+  'skabingo': linkBingo,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
