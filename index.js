@@ -194,7 +194,7 @@ const parseMessage = (from, to, message) => {
       .replace(/leet/i, '')
       .toLowerCase()
 
-    command = Object.keys(commands)
+    command = (commands.hasOwnProperty(command)) ? command : Object.keys(commands)
       .filter(x => x[x.length - 1] === '*')
       .find(x => x.search(command) >= 0) || command
 
