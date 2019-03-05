@@ -206,54 +206,6 @@ const parseNames = (channel, nicks) => {
   log.debug({ channel, nicks }, 'NAMES EVENT RECEIVED')
 }
 
-const next = (from, to, message, opts) => {
-  const nick = findAndMangleNicks(chance.pickone(streamerAliases)[0])
-  const arr = [
-    `Lets all kindly ask ${nick} to stream!`,
-    `I think ... ${nick} should stream!`,
-    `It's been a while since ${nick} last streamed.`,
-    `${nick}!`,
-    `I just asked !larry and he said that ${nick} should stream!`,
-    `If only ${nick} would stream some videogames on the internet.`,
-    `Maybe if we focus really hard ${nick} will stream!`,
-    `${nick}?`,
-    `${nick}.`,
-    `I have fond memories of ${nick} streams.`,
-    `Lets all get comfy and wait for ${nick} to stream.`,
-    `I bet ${nick} is setting up to stream as I type!`,
-    `How about ... ${nick}? :3c`,
-    `I hacked into the streamer channel and it looks like ${nick} is getting ready to stream!`,
-    `What if ${nick} streamed some videogames?`,
-    `Maybe if ${nick} is around, they could stream?`,
-    `Don't let your ${nick} streams be dreams.`,
-    `Believe in yourself and maybe one day ${nick} will stream!`,
-    `Yo ${nick}, where the vidja at?`,
-    `Lets all focus our positive energy towards ${nick}.`,
-    `I hear that ${nick} knows who will be streaming next.`,
-    `${nick}. Streams. Yes!`,
-    `${nick} should stream!`,
-    `I can never get enough of ${nick} streams!`,
-    `There's no such thing as too much ${nick} livelive!`,
-    `The world would be a better place if only ${nick} would stream.`,
-    `I'll give 20 dopecoins to ${nick} if they stream.`,
-    `Let's mix it up. How about if ${nick} streams a movie instead?`,
-    `!p1ayed ${nick}`,
-    `${nick} streams are so comfy, I could go for one right now!`,
-    'Maybe you should stream!',
-    'Lets put our heads together and think of who should stream.',
-    'You know what, no. How about YOU say who will stream next!',
-    '>implying someone will stream',
-    `(Pssst, ${nick} will be streaming next)`,
-    'The streaming gods demand an offering! Decide amongst youselves who should be sacrificed.',
-    'Maybe we should just play videogames instead.',
-    'How about we all go read a book instead?',
-    'When was the last time you went outside?',
-    'Hey, remember when Po_ used to stream?',
-    'http://i.imgur.com/y7GDSmh.png',
-  ]
-  send(to, chance.pickone(arr), opts)
-}
-
 const linkFunc = link => (from, to, message, opts) => {
   delete opts.leet
   send(to, `${from}: ${link}`, opts)
@@ -528,7 +480,6 @@ const commands = {
   'played24h': playedToday,
   'todayplayed': playedToday,
   'nextplayed': linkNext,
-  'next': next,
   // 'r4nd0mp14y3d': leetCommand(randomPlayed),
   // 'notrealplayed': fakePlayed,
   // 'prayed': fakePlayed,
