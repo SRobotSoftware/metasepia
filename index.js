@@ -196,7 +196,8 @@ const parseMessage = (from, to, message) => {
 
     command = (commands.hasOwnProperty(command)) ? command : Object.keys(commands)
       .filter(x => x[x.length - 1] === '*')
-      .find(x => x.search(command) >= 0) || command
+      .map(x => x.substr(0, x.length - 1))
+      .find(x => command.search(x) >= 0) || command
 
     if (commands.hasOwnProperty(command)) {
       log.debug({ command }, `Command parsed: ${command}`)
