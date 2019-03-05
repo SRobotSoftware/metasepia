@@ -194,6 +194,10 @@ const parseMessage = (from, to, message) => {
       .replace(/leet/i, '')
       .toLowerCase()
 
+    command = Object.keys(commands)
+      .filter(x => x.search('*'))
+      .find(x => x.search(command) >= 0) || command
+
     if (commands.hasOwnProperty(command)) {
       log.debug({ command }, `Command parsed: ${command}`)
       commands[command](from, to, message, opts)
@@ -460,10 +464,10 @@ const commands = {
   'playedtoday': playedToday,
 
   // Larry
-  'larry': larryHelp,
-  'larrylongbow': larryHelp,
-  'longbow': larryHelp,
-  'wwld': larryHelp,
+  'larry*': larryHelp,
+  'larrylongbow*': larryHelp,
+  'longbow*': larryHelp,
+  'wwld*': larryHelp,
 
   // Ska
   'bingo': linkBingo,
