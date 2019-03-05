@@ -204,7 +204,6 @@ const parseMessage = (from, to, message) => {
 
 const parseNames = (channel, nicks) => {
   log.debug({ channel, nicks }, 'NAMES EVENT RECEIVED')
-
 }
 
 const next = (from, to, message, opts) => {
