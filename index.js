@@ -195,7 +195,7 @@ const parseMessage = (from, to, message) => {
       .toLowerCase()
 
     command = Object.keys(commands)
-      .filter(x => x.search('*'))
+      .filter(x => x.search('\\*') >= 0)
       .find(x => x.search(command) >= 0) || command
 
     if (commands.hasOwnProperty(command)) {
