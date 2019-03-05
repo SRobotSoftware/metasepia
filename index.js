@@ -223,6 +223,7 @@ const linkYT = linkFunc('https://www.youtube.com/user/Dopelives')
 const linkBingo = linkFunc('Get your BINGO card and play along at: https://skabingo.neocities.org/')
 const linkNext = linkFunc('https://www.youtube.com/watch?v=4VXQSs1Qfcc')
 const linkAnniversary = linkFunc('nonono, happy skanniversary to you!')
+const linkBully = linkFunc('Don\'t bully!')
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
@@ -281,9 +282,9 @@ const parseTime = duration => {
   const durationMinutes = Math.floor(duration.asMinutes())
 
   return [durationDays, durationHours, durationMinutes].reduce((p, c, i) => {
-    if (i === 0 && c > 0) p += `${c} day(s) `
-    else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hour(s) and `
-    else if (i === 2) p += `${c} minute(s)`
+    if (i === 0 && c > 0) p += `${c} day${c > 1 ? 's' : ''} `
+    else if (i === 1 && (c > 0 || p.length > 0)) p += `${c} hour${c > 1 ? 's' : ''} and `
+    else if (i === 2) p += `${c} minute${c > 1 ? 's' : ''}`
     return p
   }, '')
 }
@@ -474,6 +475,9 @@ const commands = {
   'bingo': linkBingo,
   'skabingo': linkBingo,
   'anniversary': linkAnniversary,
+
+  // Other
+  'bully': linkBully,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
