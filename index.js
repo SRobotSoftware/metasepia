@@ -293,11 +293,15 @@ const parseTime = duration => {
 
 const fakePlayed = (from, to, message, opts) => {
   const name = /\w+(.*)/i.exec(message)[1] || 'nobody'
-  db.select()
+  // db.raw(`select * from sessions_view where end_timestamp IS NOT NULL order by session_id`)
+  const query = db.select()
     .from('sessions_view')
     .whereNotNull('end_timestamp')
-    .orderBy('session_id', 'RAND()')
+    .orderByRaw('RAND()')
     .limit(1)
+  log.info({ query: query.toString() })
+
+  query
     .then(res => {
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
