@@ -326,6 +326,33 @@ const randomPlayed = (from, to, message, opts) => {
     .catch(err => log.error(err))
 }
 
+const stream = (from, to, message, opts) => {
+  const query = playedConstructorRandom()
+  const feeling = chance.pickone([
+    'happy',
+    'sad',
+    'glad',
+    'mad',
+    'apathetic',
+    'furious',
+    'so mad!',
+    'insane!',
+    'cool.',
+    'hate everything',
+    'love everybody',
+    'want to kick ass!',
+    'feel bad',
+  ])
+
+  query
+    .then(res => {
+      res = res[0]
+      const output = findAndMangleNicks(`rememeber when ${res.streamer} streamed the ${res.activity_type} ${res.activity}? That stream made me ${feeling}`)
+      send(to, `Hey ${from}, ${output}`, opts)
+    })
+    .catch(err => log.error(err))
+}
+
 const lastPlayed = (from, to, message, opts) => {
   const options = parseOptions(message)
 
@@ -520,6 +547,7 @@ const commands = {
   'rules': linkRules,
   'newfriend': linkRules,
   'source': linkSource,
+  'stream': stream,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
