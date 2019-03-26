@@ -292,15 +292,16 @@ const parseTime = duration => {
   }, '')
 }
 
+const playedConstructorRandom = () => db.select()
+  .from('sessions_view')
+  .whereNotNull('end_timestamp')
+  .orderByRaw('RAND()')
+  .limit(1)
+
 const fakePlayed = (from, to, message, opts) => {
   const name = /\w+(.*)/i.exec(message)[1] || 'nobody'
   // db.raw(`select * from sessions_view where end_timestamp IS NOT NULL order by session_id`)
-  const query = db.select()
-    .from('sessions_view')
-    .whereNotNull('end_timestamp')
-    .orderByRaw('RAND()')
-    .limit(1)
-  log.info({ query: query.toString() })
+  const query = playedConstructorRandom()
 
   query
     .then(res => {
@@ -308,6 +309,19 @@ const fakePlayed = (from, to, message, opts) => {
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
       const output = findAndMangleNicks(`${name} has been playing ${res.activity} for ${parseTime(duration)}`)
       send(to, output, opts)
+    })
+    .catch(err => log.error(err))
+}
+
+const randomPlayed = (from, to, message, opts) => {
+  const query = playedConstructorRandom()
+
+  query
+    .then(res => {
+      res = res[0]
+      const duration = moment.duration(res.duration_in_seconds, 'seconds')
+      const output = findAndMangleNicks(`${name} has been playing ${res.activity} for ${parseTime(duration)}`)
+      send(to, `${from}: ${output}`, opts)
     })
     .catch(err => log.error(err))
 }
@@ -523,13 +537,11 @@ const commands = {
   'playedruse': fakePlayed,
   'fake': fakePlayed,
   'playedfake': fakePlayed,
-
-  // Unemplemented
-  // 'r4nd0mp14y3d': leetCommand(randomPlayed),
-  // 'randomplayed': randomPlayed,
-  //  Nobody
-  // 'nobody': nobodyPlayed,
-  // 'nobodyplayed': nobodyPlayed,
+  'r4nd0mp14y3d': leetCommand(randomPlayed),
+  'randomplayed': randomPlayed,
+  'random': randomPlayed,
+  'nobody': randomPlayed, // Should actually be stuff like "no meme has been memed for ${randomDuration}"
+  'nobodyplayed': randomPlayed,
 
   // WISDOM opt
   // "flying and shooting lasers and shit"
