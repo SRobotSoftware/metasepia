@@ -217,13 +217,15 @@ const linkFunc = link => (from, to, message, opts) => {
 }
 
 const linkDiscord = linkFunc('https://discord.gg/R7cazz8')
-const linkOnDemand = linkFunc('http://vacker.tv/ondemand/')
+const linkOnDemand = linkFunc('https://vacker.tv/ondemand/')
 const linkWebDB = linkFunc('https://played.vacker.tv/')
 const linkYT = linkFunc('https://www.youtube.com/user/Dopelives')
 const linkBingo = linkFunc('Get your BINGO card and play along at: https://skabingo.neocities.org/')
 const linkNext = linkFunc('https://www.youtube.com/watch?v=4VXQSs1Qfcc')
 const linkAnniversary = linkFunc('nonono, happy skanniversary to you!')
 const linkBully = linkFunc('Don\'t bully!')
+const linkRules = linkFunc('https://dopelives.com/newfriend.html')
+const linkVacker = linkFunc('https://vacker.tv/')
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
@@ -287,6 +289,22 @@ const parseTime = duration => {
     else if (i === 2) p += `${c} minute${c > 1 ? 's' : ''}`
     return p
   }, '')
+}
+
+const fakePlayed = (from, to, message, opts) => {
+  const name = /\w+(.*)/i.exec(message)[1] || 'nobody'
+  db.select()
+    .from('sessions_view')
+    .whereNotNull('end_timestamp')
+    .orderBy('session_id', 'RAND()')
+    .limit(1)
+    .then(res => {
+      res = res[0]
+      const duration = moment.duration(res.duration_in_seconds, 'seconds')
+      const output = findAndMangleNicks(`${name} has been playing ${res.activity} for ${parseTime(duration)}`)
+      send(to, output, opts)
+    })
+    .catch(err => log.error(err))
 }
 
 const lastPlayed = (from, to, message, opts) => {
@@ -478,6 +496,10 @@ const commands = {
 
   // Other
   'bully': linkBully,
+  'vacker': linkVacker,
+  'servers': linkVacker,
+  'rules': linkRules,
+  'newfriend': linkRules,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
@@ -489,17 +511,17 @@ const commands = {
   'played24h': playedToday,
   'todayplayed': playedToday,
   'nextplayed': linkNext,
-  // 'r4nd0mp14y3d': leetCommand(randomPlayed),
-  // 'notrealplayed': fakePlayed,
-  // 'prayed': fakePlayed,
-  // 'piayed': fakePlayed,
-  // 'playedruse': fakePlayed,
+  'notrealplayed': fakePlayed,
+  'prayed': fakePlayed,
+  'piayed': fakePlayed,
+  'playedruse': fakePlayed,
+  'fake': fakePlayed,
+  'p1ayed': fakePlayed,
+  'playedfake': fakePlayed,
 
   // Unemplemented
+  // 'r4nd0mp14y3d': leetCommand(randomPlayed),
   // 'randomplayed': randomPlayed,
-  // 'fake': fakePlayed,
-  // 'p1ayed': fakePlayed,
-  // 'playedfake': fakePlayed,
   //  Nobody
   // 'nobody': nobodyPlayed,
   // 'nobodyplayed': nobodyPlayed,
