@@ -226,6 +226,7 @@ const linkAnniversary = linkFunc('nonono, happy skanniversary to you!')
 const linkBully = linkFunc('Don\'t bully!')
 const linkRules = linkFunc('https://dopelives.com/newfriend.html')
 const linkVacker = linkFunc('https://vacker.tv/')
+const linkSource = linkFunc('https://github.com/StupidRobotClub/metasepia')
 
 const larryHelp = (from, to, message, opts) => {
   const advice = chance.pickone(longbowAdvice)
@@ -504,6 +505,7 @@ const commands = {
   'servers': linkVacker,
   'rules': linkRules,
   'newfriend': linkRules,
+  'source': linkSource,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
@@ -520,7 +522,6 @@ const commands = {
   'piayed': fakePlayed,
   'playedruse': fakePlayed,
   'fake': fakePlayed,
-  'p1ayed': fakePlayed,
   'playedfake': fakePlayed,
 
   // Unemplemented
