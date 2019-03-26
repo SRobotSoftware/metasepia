@@ -320,7 +320,7 @@ const randomPlayed = (from, to, message, opts) => {
     .then(res => {
       res = res[0]
       const duration = moment.duration(res.duration_in_seconds, 'seconds')
-      const output = findAndMangleNicks(`${name} has been playing ${res.activity} for ${parseTime(duration)}`)
+      const output = findAndMangleNicks(`${res.streamer} has been streaming the ${res.activity_type} ${res.activity} for ${parseTime(duration)}`)
       send(to, `${from}: ${output}`, opts)
     })
     .catch(err => log.error(err))
