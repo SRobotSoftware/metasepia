@@ -547,11 +547,11 @@ const commands = {
   'rules': linkRules,
   'newfriend': linkRules,
   'source': linkSource,
-  'stream': stream,
+  'stream*': stream,
+  'nostalgia*': stream,
 
   // LEGACY
   'f1r57p14y3d': leetCommand(firstPlayed),
-  'p1ayed': leetCommand(lastPlayed),
   'pl4y3d': leetCommand(lastPlayed),
   'p14y3d': leetCommand(lastPlayed),
   'l457p14y3d': leetCommand(lastPlayed),
@@ -562,6 +562,7 @@ const commands = {
   'notrealplayed': fakePlayed,
   'prayed': fakePlayed,
   'piayed': fakePlayed,
+  'p1ayed': fakePlayed,
   'playedruse': fakePlayed,
   'fake': fakePlayed,
   'playedfake': fakePlayed,
