@@ -22,7 +22,8 @@
       "host": "secret",
       "user": "secret",
       "password": "secret",
-      "database": "secret"
+      "database": "secret",
+      "port": 31468
     }
   },
   "meta": {
