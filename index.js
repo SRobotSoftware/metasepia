@@ -649,8 +649,8 @@ db.raw('call countUnmappedActivities()')
   .then(res => {
     log.warn(res[0][0][0])
     discord.login(discordConfig.token)
-    // client.connect()
-    // fixNick()
+    client.connect()
+    fixNick()
   })
   .catch(err => {
     log.error(err)
