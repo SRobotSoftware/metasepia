@@ -8,6 +8,7 @@ const config = require('config')
 const knex = require('knex')
 const moment = require('moment-timezone')
 const Chance = require('chance')
+const Discord = require('discord.js')
 
 /*
 **  Config
@@ -16,6 +17,7 @@ const Chance = require('chance')
 const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
+const discordConfig = config.get('discord')
 const {
   streamerAliases,
   topicTrackingChannels,
@@ -33,6 +35,7 @@ const client = new Irc.Client(ircConfig.server, ircConfig.name, ircConfig.config
 const db = knex(dbConfig)
 moment.tz.setDefault('Etc/GMT')
 const chance = new Chance()
+const discord = new Discord.Client()
 
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
@@ -182,7 +185,7 @@ const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
   const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(message)
   let command = parsedCommand ? parsedCommand[1] : ''
-  if ((to[0] === '#' || to === ircConfig.name) && command) {
+  if ((to[0] === '#' || to === ircConfig.name) && from !== 'ii' && command) {
     if (to === ircConfig.name) to = from
 
     const opts = {
@@ -204,6 +207,44 @@ const parseMessage = (from, to, message) => {
       commands[command](from, to, message, opts)
     } else
       log.debug({ command }, `Unrecognized Command given: ${command}`)
+  }
+}
+
+const parseDiscordMessage = message => {
+  const from = message.author.username
+  const to = message.channel.name
+  const content = message.cleanContent
+  const channel = {
+    name: message.channel.name,
+    topic: message.channel.topic,
+    guild: message.channel.guild.name
+  }
+  log.debug({ from, content, channel })
+
+  if (from === 'dopelives-irc') return
+
+  const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(content)
+  let command = parsedCommand ? parsedCommand[1] : ''
+  if (command) {
+    const opts = {
+      leet: /leet/i.test(command),
+      yell: command.replace(/[a-z]/g, '') === command,
+      notice: false,
+      discord: message,
+    }
+    command = command
+      .replace(/leet/i, '')
+      .toLowerCase()
+
+    command = (commands.hasOwnProperty(command)) ? command : Object.keys(commands)
+      .filter(x => x[x.length - 1] === '*')
+      .map(x => x.substr(0, x.length - 1))
+      .find(x => command.search(x) >= 0) + '*' || command
+
+    if (commands.hasOwnProperty(command)) {
+      log.debug({ command }, `Command parsed: ${command}`)
+      commands[command](from, to, message, opts)
+    }
   }
 }
 
@@ -487,7 +528,10 @@ const send = (to, message, opts) => {
   if (hasNotNull(opts, 'leet')) message = leet(message)
   if (hasNotNull(opts, 'yell')) message = yell(message)
 
-  client.say(to, message)
+  if (opts.hasOwnProperty('discord') && opts.discord) {
+    opts.discord.reply(message)
+  } else
+    client.say(to, message)
 }
 
 const shutdown = (code = 0, reason = '') => {
@@ -592,17 +636,21 @@ client.addListener('registered', () => log.info('Client connected...'))
 client.addListener('error', err => shutdown(1, err))
 process.on('SIGINT', () => shutdown())
 process.on('uncaughtException', err => shutdown(1, err))
+discord.on('ready', () => {
+  log.info(`Logged in as ${discord.user.tag}!`)
+})
+discord.on('message', parseDiscordMessage)
 
 /*
 **  Run
 */
-
 log.info('Connecting...')
 db.raw('call countUnmappedActivities()')
   .then(res => {
     log.warn(res[0][0][0])
-    client.connect()
-    fixNick()
+    discord.login(discordConfig.token)
+    // client.connect()
+    // fixNick()
   })
   .catch(err => {
     log.error(err)

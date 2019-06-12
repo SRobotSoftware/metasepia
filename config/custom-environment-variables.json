@@ -6,5 +6,8 @@
       "user": "DB_USER",
       "database": "DB_DATABASE"
     }
+  },
+  "discord": {
+    "token": "DISCORD_TOKEN"
   }
 }

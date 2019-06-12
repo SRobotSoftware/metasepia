@@ -2,6 +2,9 @@
   "pinoConfig": {
     "level": "trace"
   },
+  "discord": {
+    "token": ""
+  },
   "irc": {
     "server": "irc.quakenet.org",
     "name": "Metasepia-Test",
