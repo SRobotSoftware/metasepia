@@ -211,7 +211,7 @@ const parseMessage = (from, to, message) => {
 }
 
 const parseDiscordMessage = message => {
-  const from = message.author.username
+  const from = message.member.nickname || message.author.username
   const to = message.channel.name
   const content = message.cleanContent
   const channel = {
@@ -219,7 +219,7 @@ const parseDiscordMessage = message => {
     topic: message.channel.topic,
     guild: message.channel.guild.name
   }
-  log.debug({ from, content, channel })
+  log.info({ from, content, channel })
 
   if (from === 'dopelives-irc') return
 
@@ -529,7 +529,7 @@ const send = (to, message, opts) => {
   if (hasNotNull(opts, 'yell')) message = yell(message)
 
   if (opts.hasOwnProperty('discord') && opts.discord) {
-    opts.discord.reply(message)
+    opts.discord.channel.send(message)
   } else
     client.say(to, message)
 }
@@ -541,7 +541,14 @@ const shutdown = (code = 0, reason = '') => {
     process.exit(1)
   }
   log.warn({ reason }, 'Shutting Down')
-  client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
+  discord.destroy()
+    .then(() => {
+      client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
+    })
+    .catch(e => {
+      log.error(e)
+      process.exit(1)
+    })
   forceKill = true
 }
 
