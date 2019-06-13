@@ -18,6 +18,7 @@ const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
 const discordConfig = config.get('discord')
+let bridge = false
 const {
   streamerAliases,
   topicTrackingChannels,
@@ -121,6 +122,7 @@ const parseTopic = (channel, topic, nick, message) => {
   if (message.command !== 'TOPIC') return null
 
   log.info('Topic Change Detected:', topic)
+  setPresence()
 
   const streamers = getStreamers(topic)
   const activityType = getActivityType(topic)
@@ -183,6 +185,9 @@ const getActivity = (type, str) => {
 
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
+  if (bridge) {
+    discord.channels.find(x => x.name === 'stream-irc').send(`**<${from}>** ${message}`)
+  }
   const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(message)
   let command = parsedCommand ? parsedCommand[1] : ''
   if ((to[0] === '#' || to === ircConfig.name) && from !== 'ii' && command) {
@@ -221,7 +226,14 @@ const parseDiscordMessage = message => {
   }
   log.info({ from, content, channel })
 
-  if (from === 'dopelives-irc') return
+  if (bridge && !message.author.bot && channel.name === 'stream-irc') {
+    client.say('#dopefish_lives', `<${from}>: ${content}`)
+  }
+
+
+  if (from === 'dopelives-irc' || message.author.bot) return
+
+  processDiscordTriggers(from, to, content, { discord: message })
 
   const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(content)
   let command = parsedCommand ? parsedCommand[1] : ''
@@ -245,6 +257,22 @@ const parseDiscordMessage = message => {
       log.debug({ command }, `Command parsed: ${command}`)
       commands[command](from, to, message, opts)
     }
+  }
+}
+
+const processDiscordTriggers = (from, to, content, opts) => {
+  if (/bully/i.test(content)) {
+    const emoji = opts.discord.guild.emojis.find(emoji => emoji.name === 'nostreams') || '🙅'
+    opts.discord.react(emoji).catch(e => log.error({ e }))
+    // linkBully(from, to, content, opts)
+  }
+  if (/smug/i.test(content)) {
+    const emoji = opts.discord.guild.emojis.find(e => e.name === 'smug') || '😏'
+    opts.discord.react(emoji).catch(e => log.error({ e }))
+  }
+  if (/togglebridge/i.test(content) && from === 'Skwid') {
+    log.warn('TOGGLING BRIDGING')
+    bridge = !bridge
   }
 }
 
@@ -534,6 +562,29 @@ const send = (to, message, opts) => {
     client.say(to, message)
 }
 
+const setPresence = () => {
+  const { topic } = discord.channels.find(x => x.name === 'stream-irc')
+  const streamers = getStreamers(topic)
+  const activityType = getActivityType(topic)
+  const activity = getActivity(activityType, topic)
+  const online = {
+    game: {
+      name: `${streamers} stream ${activity}`,
+      type: 'WATCHING'
+    },
+    status: 'online'
+  }
+  const offline = {
+    game: {
+      name: 'with bits and bytes',
+      type: 'PLAYING'
+    },
+    status: 'idle'
+  }
+  const status = (streamers && activity) ? online : offline
+  discord.user.setPresence(status)
+}
+
 const shutdown = (code = 0, reason = '') => {
   if (forceKill) {
     log.error('!!! FORCING SHUTDOWN !!!')
@@ -544,6 +595,7 @@ const shutdown = (code = 0, reason = '') => {
   discord.destroy()
     .then(() => {
       client.disconnect((code === 0) ? 'Shutting Down' : 'Error', () => process.exit(code))
+      process.exit(0)
     })
     .catch(e => {
       log.error(e)
@@ -645,6 +697,7 @@ process.on('SIGINT', () => shutdown())
 process.on('uncaughtException', err => shutdown(1, err))
 discord.on('ready', () => {
   log.info(`Logged in as ${discord.user.tag}!`)
+  setPresence()
 })
 discord.on('message', parseDiscordMessage)
 
