@@ -19,6 +19,9 @@
       "autoConnect": false
     }
   },
+  "api": {
+    "port": 8000
+  },
   "dbConfig": {
     "client": "mysql",
     "connection": {
@@ -33,6 +36,9 @@
     "commandPrefix": "!!",
     "topicTrackingChannels": [
       "#skwid"
+    ],
+    "topicTrackingChannelsDiscord": [
+      "stream-irc"
     ],
     "silentChannels": [
       "#dopefish_lives"

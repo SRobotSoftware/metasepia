@@ -1,6 +1,6 @@
 {
   "name": "metasepia",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -16,6 +16,8 @@
     "chance": "^1.0.18",
     "config": "^3.0.1",
     "discord.js": "^11.5.1",
+    "express": "^4.17.1",
+    "helmet": "^3.18.0",
     "irc": "^0.5.2",
     "knex": "^0.16.3",
     "moment-timezone": "^0.5.23",

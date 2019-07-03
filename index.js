@@ -9,6 +9,8 @@ const knex = require('knex')
 const moment = require('moment-timezone')
 const Chance = require('chance')
 const Discord = require('discord.js')
+const express = require('express')
+const helmet = require('helmet')
 
 /*
 **  Config
@@ -18,10 +20,11 @@ const pinoConfig = config.get('pinoConfig')
 const ircConfig = config.get('irc')
 const dbConfig = config.get('dbConfig')
 const discordConfig = config.get('discord')
-let bridge = false
+const apiConfig = config.get('api')
 const {
   streamerAliases,
   topicTrackingChannels,
+  topicTrackingChannelsDiscord,
   silentChannels,
   commandPrefix,
   longbowAdvice,
@@ -37,6 +40,7 @@ const db = knex(dbConfig)
 moment.tz.setDefault('Etc/GMT')
 const chance = new Chance()
 const discord = new Discord.Client()
+const api = express()
 
 // Killswitch for when things get hung up, ctrl+c twice to hit it
 let forceKill = false
@@ -132,6 +136,37 @@ const parseTopic = (channel, topic, nick, message) => {
     startSession(streamers, activityType, activity, topic)
   else
     endSession()
+
+  // setDiscordTopic(topic)
+}
+
+const parseDiscordTopic = e => {
+  log.info('Topic Change Detected:', topic)
+  const { topic, name } = e
+  if (!topicTrackingChannelsDiscord.some(x => x === name)) return null
+
+  setPresence()
+
+  const streamers = getStreamers(topic)
+  const activityType = getActivityType(topic)
+  const activity = getActivity(activityType, topic)
+
+  if (streamers && activity)
+    startSession(streamers, activityType, activity, topic)
+  else
+    endSession()
+
+  // setIRCTopic(topic)
+}
+
+const setIRCTopic = topic => {
+  log.info('CHANGING TOPIC', { topic })
+  topicTrackingChannels.forEach(channel => client.send('topic', channel, topic))
+}
+
+const setDiscordTopic = topic => {
+  log.info('CHANGING TOPIC', { channels: Object.keys(discord.channels), topic })
+  topicTrackingChannelsDiscord.forEach(x => discord.channels[x].setTopic(topic))
 }
 
 const startSession = (streamers, activityType, activity, topicString) => {
@@ -185,9 +220,6 @@ const getActivity = (type, str) => {
 
 const parseMessage = (from, to, message) => {
   log.debug(from, to, message)
-  if (bridge) {
-    discord.channels.find(x => x.name === 'stream-irc').send(`**<${from}>** ${message}`)
-  }
   const parsedCommand = (new RegExp(`^${commandPrefix}(\\S*)`)).exec(message)
   let command = parsedCommand ? parsedCommand[1] : ''
   if ((to[0] === '#' || to === ircConfig.name) && from !== 'ii' && command) {
@@ -225,11 +257,6 @@ const parseDiscordMessage = message => {
     guild: message.channel.guild.name
   }
   log.info({ from, content, channel })
-
-  if (bridge && !message.author.bot && channel.name === 'stream-irc') {
-    client.say('#dopefish_lives', `<${from}>: ${content}`)
-  }
-
 
   if (from === 'dopelives-irc' || message.author.bot) return
 
@@ -269,10 +296,6 @@ const processDiscordTriggers = (from, to, content, opts) => {
   if (/smug/i.test(content)) {
     const emoji = opts.discord.guild.emojis.find(e => e.name === 'smug') || '😏'
     opts.discord.react(emoji).catch(e => log.error({ e }))
-  }
-  if (/togglebridge/i.test(content) && from === 'Skwid') {
-    log.warn('TOGGLING BRIDGING')
-    bridge = !bridge
   }
 }
 
@@ -700,6 +723,7 @@ discord.on('ready', () => {
   setPresence()
 })
 discord.on('message', parseDiscordMessage)
+discord.on('channelUpdate', (p, c) => parseDiscordTopic(c))
 
 /*
 **  Run
@@ -710,9 +734,56 @@ db.raw('call countUnmappedActivities()')
     log.warn(res[0][0][0])
     discord.login(discordConfig.token)
     client.connect()
+    apiSetup()
     fixNick()
   })
   .catch(err => {
     log.error(err)
     shutdown(1, err)
   })
+
+const apiSetup = () => {
+  api.use(helmet())
+  api.get('/', (apiReq, apiRes) => {
+    db.select()
+      .from('sessions_view')
+      .limit(1)
+      .then(res => {
+        if (!res.length) {
+          res.status(500).send('Server Error')
+          return null
+        }
+
+        res = res[0]
+
+        const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
+        const result = {
+          'streamer': res.streamer || '',
+          'activity': res.activity || '',
+          'activity_type': res.activity_type || '',
+          'duration': parseTime(duration),
+          'stream_start': res.start_timestamp,
+          'stream_end': res.end_timestamp,
+          'is_live': !!res.end_timestamp,
+          'timestamp': Date.now(),
+          // 'topicString': 'Streamer: | Game: | https://somelink.fuckit/idunno'
+        }
+        apiRes.json(result)
+      })
+      .catch(err => {
+        apiRes.status(500).send('Server Error')
+        log.error(err)
+      })
+  })
+  api.listen(apiConfig.port, () => log.info(`Example app listening on port ${apiConfig.port}!`))
+}
+
+// desired API response
+// {
+//   "streamer": "",
+//   "activity": "",
+//   "activityType": "game",
+//   "isLive": false,
+//   "timestamp": 532178432915,
+//   "topicString": "Streamer: | Game: | https://somelink.fuckit/idunno"
+// }
