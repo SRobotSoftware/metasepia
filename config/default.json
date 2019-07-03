@@ -10,7 +10,7 @@
     "name": "Metasepia-Test",
     "config": {
       "channels": [
-        "#skwid"
+        "#skwid2"
       ],
       "username": "Metasepia-Test",
       "realName": "Metasepia Pfefferi - TEST",
@@ -35,7 +35,7 @@
   "meta": {
     "commandPrefix": "!!",
     "topicTrackingChannels": [
-      "#skwid"
+      "#skwid2"
     ],
     "topicTrackingChannelsDiscord": [
       "stream-irc"

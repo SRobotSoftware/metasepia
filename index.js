@@ -141,8 +141,8 @@ const parseTopic = (channel, topic, nick, message) => {
 }
 
 const parseDiscordTopic = e => {
-  log.info('Topic Change Detected:', topic)
   const { topic, name } = e
+  log.info('Topic Change Detected:', topic)
   if (!topicTrackingChannelsDiscord.some(x => x === name)) return null
 
   setPresence()
