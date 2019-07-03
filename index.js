@@ -758,13 +758,13 @@ const apiSetup = () => {
 
         const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
         const result = {
-          'streamer': res.streamer || '',
-          'activity': res.activity || '',
-          'activity_type': res.activity_type || '',
+          'streamer': (res.end_timestamp) ? '' : res.streamer,
+          'activity': (res.end_timestamp) ? '' : res.activity,
+          'activity_type': (res.end_timestamp) ? '' : res.activity_type,
           'duration': parseTime(duration),
           'stream_start': res.start_timestamp,
           'stream_end': res.end_timestamp,
-          'is_live': !!res.end_timestamp,
+          'is_live': !res.end_timestamp,
           'timestamp': Date.now(),
           // 'topicString': 'Streamer: | Game: | https://somelink.fuckit/idunno'
         }
@@ -777,13 +777,3 @@ const apiSetup = () => {
   })
   api.listen(apiConfig.port, () => log.info(`Example app listening on port ${apiConfig.port}!`))
 }
-
-// desired API response
-// {
-//   "streamer": "",
-//   "activity": "",
-//   "activityType": "game",
-//   "isLive": false,
-//   "timestamp": 532178432915,
-//   "topicString": "Streamer: | Game: | https://somelink.fuckit/idunno"
-// }
