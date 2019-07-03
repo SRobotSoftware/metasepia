@@ -758,9 +758,9 @@ const apiSetup = () => {
 
         const duration = moment.duration(moment().diff(moment(res.start_timestamp), 'milliseconds'), 'milliseconds')
         const result = {
-          'streamer': (res.end_timestamp) ? '' : res.streamer,
-          'activity': (res.end_timestamp) ? '' : res.activity,
-          'activity_type': (res.end_timestamp) ? '' : res.activity_type,
+          'streamer': res.streamer,
+          'activity': res.activity,
+          'activity_type': res.activity_type,
           'duration': parseTime(duration),
           'stream_start': res.start_timestamp,
           'stream_end': res.end_timestamp,
