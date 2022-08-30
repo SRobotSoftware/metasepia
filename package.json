@@ -20,7 +20,7 @@
     "helmet": "^3.21.2",
     "irc": "^0.5.2",
     "knex": "^0.19.5",
-    "moment-timezone": "^0.5.23",
+    "moment-timezone": "^0.5.35",
     "mysql": "github:mysqljs/mysql",
     "pino": "^5.10.6"
   }
